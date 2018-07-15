@@ -1,0 +1,21 @@
+sudo: false
+language: go
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - sourceline: 'deb http://ppa.launchpad.net/maarten-fonville/protobuf/ubuntu trusty main'
+    packages:
+      - protobuf-compiler
+
+before_install:
+  # - go get -u github.com/golang/protobuf/protoc-gen-go
+  - mkdir -p proto
+  - protoc -I=internal/proto --go_out=proto bluzelle.proto audit.proto database.proto
+
+go:
+  - '1.9.2'
+
+script:
+  - go test ./bluzelle_test.go
