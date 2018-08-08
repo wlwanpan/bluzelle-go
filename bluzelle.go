@@ -1,99 +1,127 @@
-package main
+package bluzelle
 
 import (
-	"fmt"
-	"flag"
 	"encoding/base64"
+	"fmt"
+	"math/rand"
+	"net/url"
+	"os"
+	"os/signal"
+	"strings"
+
+	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
-	// "net/http"
-	// "github.com/golang/protobuf/proto"
-	// "./internal/proto"
+	"github.com/wlwanpan/bluzelle-go/proto"
 )
 
 type Bluzelle struct {
 	endpoint string
-	port uint16
-	uuid string
+	port     uint16
+	uuid     string
 }
 
-func wsConnect(endpoint string, msg string) <-chan string {
-	c := make(chan string)
-
-	go func() {
-		ws := gowebsocket.New(endpoint)
-		ws.OnConnected = func(ws gowebsocket.Socket) {
-			fmt.Println("OnConnected")
-			ws.SendText(msg)
-		}
-		ws.OnConnectError = func(err error, ws gowebsocket.Socket) {
-			fmt.Println("OnConnectError")
-			c <- fmt.Sprint(err)
-		}
-		ws.OnTextMessage = func(res string, ws gowebsocket.Socket) {
-			fmt.Println("OnTextMessage")
-			c <- res
-		}
-		ws.OnBinaryMessage = func(data []byte, ws gowebsocket.Socket) {
-			fmt.Println("OnBinaryMessage")
-		}
-		ws.OnDisconnected = func(err error, ws gowebsocket.Socket) {
-			fmt.Println("OnDisconnected")
-			if err != nil {
-				fmt.Println("Error")
-				c <- fmt.Sprint(err)
-			}
-		}
-		ws.Connect()
-	}()
-
-	return c
+func (blz Bluzelle) genAddr() string {
+	portStr := fmt.Sprint(blz.port)
+	strArr := []string{blz.endpoint, ":", portStr}
+	return strings.Join(strArr, "")
 }
 
-func (blz *Bluzelle) SendRequest(k string) string {
-	// {"bzn-api": "database","msg": encoded64_msg}
-	msg := fmt.Sprintf("{'bzn-api':'database', 'msg':%s}", "Uj0SKAokODA3OGUxNWMtYWM0Ny00ZGI5LTgzZGYtZGE2ZGJhNzEyMzFhEARSERIFaGVsbG8aCAEid29ybGQi")
-	msgByte := []byte(msg)
-	encodedBase64Msg := base64.StdEncoding.EncodeToString(msgByte)
-	endpoint := fmt.Sprintf("ws://%s:%s", blz.endpoint, fmt.Sprint(blz.port))
-
-	c := wsConnect(endpoint, encodedBase64Msg)
-	fmt.Println(<-c)
-
-	return "string to return"
-}
-
-func connect(endpoint string, port uint16, uuid string) Bluzelle {
-	return Bluzelle{
-		endpoint: endpoint,
-		port: port,
-		uuid: uuid,
+func (blz Bluzelle) genHeaderPb() *pb.DatabaseHeader {
+	return &pb.DatabaseHeader{
+		DbUuid:        blz.uuid,
+		TransactionId: rand.Uint64(),
 	}
 }
 
-// func (blz Bluzelle) create(k string, v string) bool {}
-
-func (blz Bluzelle) read(k string) string {
-	testStr := "This is a test key value"
-	return blz.SendRequest(testStr)
+func Connect(endpoint string, port uint16, uuid string) *Bluzelle {
+	return &Bluzelle{
+		endpoint: endpoint,
+		port:     port,
+		uuid:     uuid,
+	}
 }
 
-// func (blz Bluzelle) update(k string, v string) bool {}
-//
-// func (blz Bluzelle) delete(k string) bool {}
-//
-// func (blz Bluzelle) has(k string) bool {}
-//
-// func (blz Bluzelle) keys() []string {}
-//
-// func (blz Bluzelle) size() uint {}
+func wsConnect(endpoint string, message string) <-chan string {
 
-const Endpoint string = "testnet-dev.bluzelle.com"
-const Port uint16 = 51010
-const Uuid string = "8c073d96-7291-11e8-adc0-fa7ae01bbebc"
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+
+	u := url.URL{Scheme: "ws", Host: endpoint}
+	fmt.Println("Connecting to: ", u.String())
+
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer c.Close()
+
+	res := make(chan string)
+
+	go func() {
+		defer close(res)
+		for {
+			msgType, msg, err := c.ReadMessage()
+			fmt.Println(msgType)
+			if err != nil {
+				fmt.Println("Error ReadMessage:")
+				fmt.Println(fmt.Sprint(err))
+				return
+			}
+			fmt.Println(msg)
+			res <- string(msg[:])
+			c.WriteMessage(websocket.TextMessage, []byte(message))
+		}
+	}()
+
+	return res
+}
+
+func (blz *Bluzelle) sendRequest(k string) string {
+	prePackProto := "Uj0SKAokODA3OGUxNWMtYWM0Ny00ZGI5LTgzZGYtZGE2ZGJhNzEyMzFhEARSERIFaGVsbG8aCAEid29ybGQi"
+	msg := fmt.Sprintf("{'bzn-api':'database', 'msg':%s}", prePackProto)
+	msgByte := []byte(msg)
+	encodedBase64Msg := base64.StdEncoding.EncodeToString(msgByte)
+
+	wsAddr := blz.genAddr()
+
+	c := wsConnect(wsAddr, encodedBase64Msg)
+
+	return <-c
+}
+
+func (blz Bluzelle) Read(k string) string {
+
+	readPb := &pb.DatabaseMsg_Read{
+		Read: &pb.DatabaseRead{
+			Key: k,
+		},
+	}
+
+	blzMsgPb := &pb.BznMsg{
+		Msg: pb.isBznMsg_Msg{
+			Db: pb.DatabaseMsg{
+				Header: blz.genHeaderPb(),
+				Msg:    readPb,
+			},
+		},
+	}
+	encodedBlzMsgPb, err := proto.Marshal(blzMsgPb)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(encodedBlzMsgPb)
+	return blz.sendRequest(encodedBlzMsgPb)
+}
 
 func main() {
+
+	const Endpoint string = "testnet-dev.bluzelle.com"
+	const Port uint16 = 51010
+	const Uuid string = "8c073d96-7291-11e8-adc0-fa7ae01bbebc"
 
 	blz := connect(Endpoint, Port, Uuid)
 	value := blz.read("asdf")
 	fmt.Printf(value)
+
 }
