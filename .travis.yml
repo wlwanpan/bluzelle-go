@@ -18,4 +18,4 @@ go:
   - '1.9.2'
 
 script:
-  - go test ./bluzelle_test.go
+  - go test bluzelle_test.go
