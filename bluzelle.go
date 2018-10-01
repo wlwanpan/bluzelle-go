@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -15,20 +16,26 @@ import (
 )
 
 const (
-	DefaultUuid     = "8c073d96-7291-11e8-adc0-fa7ae01bbebc"
-	DefaultEndpoint = "127.0.0.1"
-	DefaultPort     = 51010
+	DefaultUuid      = "8c073d96-7291-11e8-adc0-fa7ae01bbebc"
+	DefaultEndpoint  = "127.0.0.1"
+	DefaultPort      = 51010
+	MaxRedirectLimit = 3
 )
 
-type BlzApi struct {
+// ErrRedirectLimit is returned when the leader node is switched more
+// than the default set limit.
+var ErrRedirectLimit = errors.New("Max Leader redirect attempt reached")
+
+type BlzReq struct {
 	BznApi string `json:"bzn-api"`
 	Msg    string `json:"msg"`
 }
 
 type Bluzelle struct {
-	Endpoint string
-	Port     uint32
-	Uuid     string
+	Endpoint        string
+	Port            uint32
+	Uuid            string
+	redirectAttempt uint16
 }
 
 func (blz *Bluzelle) SetEndpoint(endpoint string) {
@@ -43,7 +50,11 @@ func (blz *Bluzelle) SetUuid(uuid string) {
 	blz.Uuid = uuid
 }
 
-func (blz *Bluzelle) getWsAddr() string {
+func (blz *Bluzelle) resetRedirectAttempt() {
+	blz.redirectAttempt = 0
+}
+
+func (blz *Bluzelle) wsAddr() string {
 	p := fmt.Sprint(blz.Port)
 	strArr := []string{blz.Endpoint, ":", p}
 	return strings.Join(strArr, "")
@@ -57,20 +68,24 @@ func (blz *Bluzelle) pbHeader() *pb.DatabaseHeader {
 }
 
 func (blz *Bluzelle) sendRequest(m []byte) (*pb.DatabaseResponseResponse, error) {
-	encodedBase64 := base64.StdEncoding.EncodeToString(m)
-	api := &BlzApi{
-		BznApi: "database",
-		Msg:    encodedBase64,
+	if blz.redirectAttempt > MaxRedirectLimit {
+		blz.resetRedirectAttempt()
+		return &pb.DatabaseResponseResponse{}, ErrRedirectLimit
 	}
 
-	apiJson, err := json.Marshal(api)
+	req, err := genReq(m)
 	if err != nil {
 		return &pb.DatabaseResponseResponse{}, err
 	}
 
-	wsAddr := blz.getWsAddr()
-	msg := string(apiJson)
-	dbResp, err := wsConnect(wsAddr, msg)
+	wsAddr := blz.wsAddr()
+	resp, err := wsConnect(wsAddr, req)
+	if err != nil {
+		return &pb.DatabaseResponseResponse{}, err
+	}
+
+	dbResp := &pb.DatabaseResponse{}
+	err = proto.Unmarshal(resp, dbResp)
 	if err != nil {
 		return &pb.DatabaseResponseResponse{}, err
 	}
@@ -80,19 +95,35 @@ func (blz *Bluzelle) sendRequest(m []byte) (*pb.DatabaseResponseResponse, error)
 		log.Printf("Switching to leader: %v", redirect.GetLeaderName())
 		blz.SetEndpoint(redirect.GetLeaderHost())
 		blz.SetPort(redirect.GetLeaderPort())
+		blz.redirectAttempt++
 		return blz.sendRequest(m)
 	}
 
 	return dbResp.GetResp(), nil
 }
 
-func wsConnect(endpoint string, msg string) (*pb.DatabaseResponse, error) {
+func genReq(m []byte) (string, error) {
+	encodedBase64 := base64.StdEncoding.EncodeToString(m)
+	blzReq := &BlzReq{
+		BznApi: "database",
+		Msg:    encodedBase64,
+	}
+
+	req, err := json.Marshal(blzReq)
+	if err != nil {
+		return "", err
+	}
+
+	return string(req), nil
+}
+
+func wsConnect(endpoint string, msg string) ([]byte, error) {
 	u := url.URL{Scheme: "ws", Host: endpoint}
 	log.Println("Connecting to: ", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		return &pb.DatabaseResponse{}, err
+		return []byte{}, err
 	}
 	defer c.Close()
 
@@ -115,15 +146,9 @@ func wsConnect(endpoint string, msg string) (*pb.DatabaseResponse, error) {
 	for {
 		select {
 		case resp := <-respChan:
-			dbResp := &pb.DatabaseResponse{}
-			err := proto.Unmarshal(resp, dbResp)
-			if err != nil {
-				return dbResp, err
-			}
-			return dbResp, nil
+			return resp, nil
 		case err := <-errChan:
-			log.Println(err.Error())
-			return &pb.DatabaseResponse{}, err
+			return []byte{}, err
 		}
 	}
 }
@@ -140,10 +165,15 @@ func Connect(endpoint string, port uint32, uuid string) *Bluzelle {
 	}
 
 	return &Bluzelle{
-		Endpoint: endpoint,
-		Port:     port,
-		Uuid:     uuid,
+		Endpoint:        endpoint,
+		Port:            port,
+		Uuid:            uuid,
+		redirectAttempt: 0,
 	}
+}
+
+func (blz Bluzelle) Create(k string, v string) error {
+	return nil
 }
 
 func (blz Bluzelle) Read(k string) (string, error) {
@@ -175,6 +205,26 @@ func (blz Bluzelle) Read(k string) (string, error) {
 		return "", err
 	}
 	return string(resp.GetValue()[:]), nil
+}
+
+func (blz Bluzelle) Update(k string, v string) error {
+	return nil
+}
+
+func (blz Bluzelle) Remove(k string) error {
+	return nil
+}
+
+func (blz Bluzelle) Has(k string) bool {
+	return true
+}
+
+func (blz Bluzelle) Keys() []string {
+	return []string{}
+}
+
+func (blz Bluzelle) Size() uint32 {
+	return 0
 }
 
 func main() {
