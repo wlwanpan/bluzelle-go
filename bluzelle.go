@@ -26,6 +26,7 @@ const (
 // than the default set limit.
 var ErrRedirectLimit = errors.New("Max Leader redirect attempt reached")
 
+// Bluzelle request api struct
 type BlzReq struct {
 	BznApi string `json:"bzn-api"`
 	Msg    string `json:"msg"`
@@ -67,15 +68,10 @@ func (blz *Bluzelle) pbHeader() *pb.DatabaseHeader {
 	}
 }
 
-func (blz *Bluzelle) sendRequest(m []byte) (*pb.DatabaseResponseResponse, error) {
+func (blz *Bluzelle) sendRequest(req string) (*pb.DatabaseResponseResponse, error) {
 	if blz.redirectAttempt > MaxRedirectLimit {
 		blz.resetRedirectAttempt()
 		return &pb.DatabaseResponseResponse{}, ErrRedirectLimit
-	}
-
-	req, err := genReq(m)
-	if err != nil {
-		return &pb.DatabaseResponseResponse{}, err
 	}
 
 	wsAddr := blz.wsAddr()
@@ -96,7 +92,7 @@ func (blz *Bluzelle) sendRequest(m []byte) (*pb.DatabaseResponseResponse, error)
 		blz.SetEndpoint(redirect.GetLeaderHost())
 		blz.SetPort(redirect.GetLeaderPort())
 		blz.redirectAttempt++
-		return blz.sendRequest(m)
+		return blz.sendRequest(req)
 	}
 
 	return dbResp.GetResp(), nil
@@ -115,6 +111,94 @@ func genReq(m []byte) (string, error) {
 	}
 
 	return string(req), nil
+}
+
+func (blz *Bluzelle) encodeAndSendReq(msg *pb.BznMsg) (*pb.DatabaseResponseResponse, error) {
+	encoded, err := proto.Marshal(msg)
+	if err != nil {
+		return &pb.DatabaseResponseResponse{}, err
+	}
+
+	req, err := genReq(encoded)
+	if err != nil {
+		return &pb.DatabaseResponseResponse{}, err
+	}
+
+	return blz.sendRequest(req)
+}
+
+func Connect(endpoint string, port uint32, uuid string) *Bluzelle {
+	if endpoint == "" {
+		endpoint = DefaultEndpoint
+	}
+	if port == 0 {
+		port = DefaultPort
+	}
+	if uuid == "" {
+		uuid = DefaultUuid
+	}
+
+	return &Bluzelle{
+		Endpoint:        endpoint,
+		Port:            port,
+		Uuid:            uuid,
+		redirectAttempt: 0,
+	}
+}
+
+func (blz Bluzelle) Create(k string, v []byte) error {
+	createPb := &pb.DatabaseMsg_Create{Create: &pb.DatabaseCreate{Key: k, Value: v}}
+	msgPb := &pb.BznMsg{
+		Msg: &pb.BznMsg_Db{
+			Db: &pb.DatabaseMsg{
+				Header: blz.pbHeader(),
+				Msg:    createPb,
+			},
+		},
+	}
+	resp, err := blz.encodeAndSendReq(msgPb)
+	log.Println(resp)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (blz Bluzelle) Read(k string) ([]byte, error) {
+	readPb := &pb.DatabaseMsg_Read{Read: &pb.DatabaseRead{Key: k}}
+	msgPb := &pb.BznMsg{
+		Msg: &pb.BznMsg_Db{
+			Db: &pb.DatabaseMsg{
+				Header: blz.pbHeader(),
+				Msg:    readPb,
+			},
+		},
+	}
+	resp, err := blz.encodeAndSendReq(msgPb)
+	if err != nil {
+		return []byte{}, err
+	}
+	return resp.GetValue(), nil
+}
+
+func (blz Bluzelle) Update(k string, v string) error {
+	return nil
+}
+
+func (blz Bluzelle) Remove(k string) error {
+	return nil
+}
+
+func (blz Bluzelle) Has(k string) bool {
+	return true
+}
+
+func (blz Bluzelle) Keys() []string {
+	return []string{}
+}
+
+func (blz Bluzelle) Size() uint32 {
+	return 0
 }
 
 func wsConnect(endpoint string, msg string) ([]byte, error) {
@@ -151,80 +235,6 @@ func wsConnect(endpoint string, msg string) ([]byte, error) {
 			return []byte{}, err
 		}
 	}
-}
-
-func Connect(endpoint string, port uint32, uuid string) *Bluzelle {
-	if endpoint == "" {
-		endpoint = DefaultEndpoint
-	}
-	if port == 0 {
-		port = DefaultPort
-	}
-	if uuid == "" {
-		uuid = DefaultUuid
-	}
-
-	return &Bluzelle{
-		Endpoint:        endpoint,
-		Port:            port,
-		Uuid:            uuid,
-		redirectAttempt: 0,
-	}
-}
-
-func (blz Bluzelle) Create(k string, v string) error {
-	return nil
-}
-
-func (blz Bluzelle) Read(k string) (string, error) {
-	var err error
-	var encodedBlzMsgPb []byte
-	var resp *pb.DatabaseResponseResponse
-
-	read := &pb.DatabaseMsg_Read{
-		Read: &pb.DatabaseRead{
-			Key: k,
-		},
-	}
-	blzMsgPb := &pb.BznMsg{
-		Msg: &pb.BznMsg_Db{
-			Db: &pb.DatabaseMsg{
-				Header: blz.pbHeader(),
-				Msg:    read,
-			},
-		},
-	}
-
-	encodedBlzMsgPb, err = proto.Marshal(blzMsgPb)
-	if err != nil {
-		return "", err
-	}
-
-	resp, err = blz.sendRequest(encodedBlzMsgPb)
-	if err != nil {
-		return "", err
-	}
-	return string(resp.GetValue()[:]), nil
-}
-
-func (blz Bluzelle) Update(k string, v string) error {
-	return nil
-}
-
-func (blz Bluzelle) Remove(k string) error {
-	return nil
-}
-
-func (blz Bluzelle) Has(k string) bool {
-	return true
-}
-
-func (blz Bluzelle) Keys() []string {
-	return []string{}
-}
-
-func (blz Bluzelle) Size() uint32 {
-	return 0
 }
 
 func main() {
