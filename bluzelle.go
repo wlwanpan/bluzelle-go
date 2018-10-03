@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
@@ -16,15 +17,20 @@ import (
 )
 
 const (
-	DefaultUuid      = "8c073d96-7291-11e8-adc0-fa7ae01bbebc"
-	DefaultEndpoint  = "127.0.0.1"
-	DefaultPort      = 51010
+	DefaultUuid     = "8c073d96-7291-11e8-adc0-fa7ae01bbebc"
+	DefaultEndpoint = "127.0.0.1"
+	DefaultPort     = 51010
+
+	ConnTimeout      = 5 * time.Second
 	MaxRedirectLimit = 3
 )
 
 // ErrRedirectLimit is returned when the leader node is switched more
 // than the default set limit.
-var ErrRedirectLimit = errors.New("Max Leader redirect attempt reached")
+var (
+	ErrRedirectLimit = errors.New("Max Leader redirect attempt reached")
+	ErrConnTimeout   = errors.New("Connection timeout")
+)
 
 // Bluzelle request api struct
 type BlzReq struct {
@@ -95,7 +101,13 @@ func (blz *Bluzelle) sendRequest(req string) (*pb.DatabaseResponseResponse, erro
 		return blz.sendRequest(req)
 	}
 
-	return dbResp.GetResp(), nil
+	dbRespResp := dbResp.GetResp()
+	respErr := dbRespResp.GetError()
+	if respErr != "" {
+		return &pb.DatabaseResponseResponse{}, errors.New(respErr)
+	}
+
+	return dbRespResp, nil
 }
 
 func genReq(m []byte) (string, error) {
@@ -156,8 +168,7 @@ func (blz Bluzelle) Create(k string, v []byte) error {
 			},
 		},
 	}
-	resp, err := blz.encodeAndSendReq(msgPb)
-	log.Println(resp)
+	_, err := blz.encodeAndSendReq(msgPb)
 	if err != nil {
 		return err
 	}
@@ -181,27 +192,93 @@ func (blz Bluzelle) Read(k string) ([]byte, error) {
 	return resp.GetValue(), nil
 }
 
-func (blz Bluzelle) Update(k string, v string) error {
+func (blz Bluzelle) Update(k string, v []byte) error {
+	updatePb := &pb.DatabaseMsg_Update{Update: &pb.DatabaseUpdate{Key: k, Value: v}}
+	msgPb := &pb.BznMsg{
+		Msg: &pb.BznMsg_Db{
+			Db: &pb.DatabaseMsg{
+				Header: blz.pbHeader(),
+				Msg:    updatePb,
+			},
+		},
+	}
+	_, err := blz.encodeAndSendReq(msgPb)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 func (blz Bluzelle) Remove(k string) error {
+	deletePb := &pb.DatabaseMsg_Delete{Delete: &pb.DatabaseDelete{Key: k}}
+	msgPb := &pb.BznMsg{
+		Msg: &pb.BznMsg_Db{
+			Db: &pb.DatabaseMsg{
+				Header: blz.pbHeader(),
+				Msg:    deletePb,
+			},
+		},
+	}
+	_, err := blz.encodeAndSendReq(msgPb)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (blz Bluzelle) Has(k string) bool {
-	return true
+func (blz Bluzelle) Has(k string) (bool, error) {
+	hasPb := &pb.DatabaseMsg_Has{Has: &pb.DatabaseHas{Key: k}}
+	msgPb := &pb.BznMsg{
+		Msg: &pb.BznMsg_Db{
+			Db: &pb.DatabaseMsg{
+				Header: blz.pbHeader(),
+				Msg:    hasPb,
+			},
+		},
+	}
+	resp, err := blz.encodeAndSendReq(msgPb)
+	if err != nil {
+		return false, err
+	}
+	return resp.GetHas(), nil
 }
 
-func (blz Bluzelle) Keys() []string {
-	return []string{}
+func (blz Bluzelle) Keys() ([]string, error) {
+	keysPb := &pb.DatabaseMsg_Keys{Keys: &pb.DatabaseEmpty{}}
+	msgPb := &pb.BznMsg{
+		Msg: &pb.BznMsg_Db{
+			Db: &pb.DatabaseMsg{
+				Header: blz.pbHeader(),
+				Msg:    keysPb,
+			},
+		},
+	}
+	resp, err := blz.encodeAndSendReq(msgPb)
+	if err != nil {
+		return []string{}, err
+	}
+	return resp.GetKeys(), nil
 }
 
-func (blz Bluzelle) Size() uint32 {
-	return 0
+func (blz Bluzelle) Size() (int32, error) {
+	sizePb := &pb.DatabaseMsg_Size{Size: &pb.DatabaseEmpty{}}
+	msgPb := &pb.BznMsg{
+		Msg: &pb.BznMsg_Db{
+			Db: &pb.DatabaseMsg{
+				Header: blz.pbHeader(),
+				Msg:    sizePb,
+			},
+		},
+	}
+	resp, err := blz.encodeAndSendReq(msgPb)
+	if err != nil {
+		return 0, err
+	}
+	return resp.GetSize(), nil
 }
 
 func wsConnect(endpoint string, msg string) ([]byte, error) {
+	s := time.Now()
 	u := url.URL{Scheme: "ws", Host: endpoint}
 	log.Println("Connecting to: ", u.String())
 
@@ -234,16 +311,58 @@ func wsConnect(endpoint string, msg string) ([]byte, error) {
 		case err := <-errChan:
 			return []byte{}, err
 		}
+
+		diff := time.Now().Sub(s)
+		if diff >= ConnTimeout {
+			return []byte{}, ErrConnTimeout
+		}
 	}
 }
 
 func main() {
 
-	blz := Connect("testnet.bluzelle.com", 51010, "80174b53-2dda-49f1-9d6a-6a780d4")
+	// blz := Connect("testnet.bluzelle.com", 51010, "80174b53-2dda-49f1-9d6a-6a780d4")
 
-	value, err := blz.Read("asdf")
-	if err != nil {
-		log.Println(err.Error())
-	}
-	log.Println(value)
+	// to move cases to bluzelle_test
+
+	// create test case
+	// err := blz.Create("asdf123123", []byte("test123"))
+	// if err != nil {
+	// 	log.Println(err.Error())
+	// }
+
+	// update test case
+	// err := blz.Update("asdf", []byte("test123"))
+	// if err != nil {
+	// 	log.Println(err.Error())
+	// }
+	// // log.Println(string(value[:]))
+
+	// read test case
+	// value, err := blz.Read("asdf")
+	// if err != nil {
+	// 	log.Println(err.Error())
+	// }
+	// log.Println(string(value[:]))
+
+	// size test case
+	// size, err := blz.Size()
+	// if err != nil {
+	// 	log.Println(err.Error())
+	// }
+	// log.Println(size)
+
+	// has test case
+	// has, err := blz.Has("asdf")
+	// if err != nil {
+	// 	log.Println(err.Error())
+	// }
+	// log.Println(has)
+
+	// keys test case
+	// keys, err := blz.Keys()
+	// if err != nil {
+	// 	log.Println(err.Error())
+	// }
+	// log.Println(keys)
 }
