@@ -16,6 +16,7 @@ import (
 	"github.com/wlwanpan/bluzelle-go/proto"
 )
 
+// Default const (Might change to swarmdb specs, check open source gitter channel)
 const (
 	DefaultUuid     = "8c073d96-7291-11e8-adc0-fa7ae01bbebc"
 	DefaultEndpoint = "127.0.0.1"
@@ -25,11 +26,14 @@ const (
 	MaxRedirectLimit = 3
 )
 
-// ErrRedirectLimit is returned when the leader node is switched more
-// than the default set limit.
 var (
+	// ErrRedirectLimit is returned when the leader node is switched more
+	// than the default set limit.
 	ErrRedirectLimit = errors.New("Max Leader redirect attempt reached")
-	ErrConnTimeout   = errors.New("Connection timeout")
+
+	// ErrConnTimeout is returned when websocket connection to the swarm is
+	// longer than the default set limit.
+	ErrConnTimeout = errors.New("Connection timeout")
 )
 
 // Bluzelle request api struct
@@ -38,10 +42,18 @@ type BlzReq struct {
 	Msg    string `json:"msg"`
 }
 
+// Bluzelle representing connection to bluzelle swarmdb
 type Bluzelle struct {
-	Endpoint        string
-	Port            uint32
-	Uuid            string
+	// Websocket addr of leaderhost
+	Endpoint string
+
+	// Port of leaderhost
+	Port uint32
+
+	// Uuid of db reference on the swarm
+	Uuid string
+
+	// redirectAttempt tracks number of leaderhost redirected
 	redirectAttempt uint16
 }
 
@@ -57,16 +69,14 @@ func (blz *Bluzelle) SetUuid(uuid string) {
 	blz.Uuid = uuid
 }
 
-func (blz *Bluzelle) resetRedirectAttempt() {
-	blz.redirectAttempt = 0
-}
-
+// Generate websocket addr from endpoint and port
 func (blz *Bluzelle) wsAddr() string {
 	p := fmt.Sprint(blz.Port)
 	strArr := []string{blz.Endpoint, ":", p}
 	return strings.Join(strArr, "")
 }
 
+// Generate protobuf bluzelle msg from bluzelle struct
 func (blz *Bluzelle) pbBznMsg() *pb.BznMsg {
 	return &pb.BznMsg{
 		Msg: &pb.BznMsg_Db{
@@ -82,7 +92,7 @@ func (blz *Bluzelle) pbBznMsg() *pb.BznMsg {
 
 func (blz *Bluzelle) sendRequest(req string) (*pb.DatabaseResponseResponse, error) {
 	if blz.redirectAttempt > MaxRedirectLimit {
-		blz.resetRedirectAttempt()
+		blz.redirectAttempt = 0
 		return &pb.DatabaseResponseResponse{}, ErrRedirectLimit
 	}
 
@@ -116,8 +126,13 @@ func (blz *Bluzelle) sendRequest(req string) (*pb.DatabaseResponseResponse, erro
 	return dbRespResp, nil
 }
 
-func genReq(m []byte) (string, error) {
-	encodedBase64 := base64.StdEncoding.EncodeToString(m)
+func (blz *Bluzelle) encodeAndSendReq(msg *pb.BznMsg) (*pb.DatabaseResponseResponse, error) {
+	encoded, err := proto.Marshal(msg)
+	if err != nil {
+		return &pb.DatabaseResponseResponse{}, err
+	}
+
+	encodedBase64 := base64.StdEncoding.EncodeToString(encoded)
 	blzReq := &BlzReq{
 		BznApi: "database",
 		Msg:    encodedBase64,
@@ -125,24 +140,10 @@ func genReq(m []byte) (string, error) {
 
 	req, err := json.Marshal(blzReq)
 	if err != nil {
-		return "", err
-	}
-
-	return string(req), nil
-}
-
-func (blz *Bluzelle) encodeAndSendReq(msg *pb.BznMsg) (*pb.DatabaseResponseResponse, error) {
-	encoded, err := proto.Marshal(msg)
-	if err != nil {
 		return &pb.DatabaseResponseResponse{}, err
 	}
 
-	req, err := genReq(encoded)
-	if err != nil {
-		return &pb.DatabaseResponseResponse{}, err
-	}
-
-	return blz.sendRequest(req)
+	return blz.sendRequest(string(req))
 }
 
 func Connect(endpoint string, port uint32, uuid string) *Bluzelle {
