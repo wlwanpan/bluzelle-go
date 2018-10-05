@@ -1,3 +1,4 @@
 [submodule "proto"]
-  path = proto
-  url = git@github.com:Bluzelle/swarmdb
+	path = proto
+	url = https://github.com/bluzelle/swarmdb
+	branch = devel

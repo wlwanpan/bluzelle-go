@@ -1,4 +1,4 @@
-package main
+package bluzelle
 
 import (
 	"encoding/base64"
@@ -67,10 +67,16 @@ func (blz *Bluzelle) wsAddr() string {
 	return strings.Join(strArr, "")
 }
 
-func (blz *Bluzelle) pbHeader() *pb.DatabaseHeader {
-	return &pb.DatabaseHeader{
-		DbUuid:        blz.Uuid,
-		TransactionId: rand.Uint64(),
+func (blz *Bluzelle) pbBznMsg() *pb.BznMsg {
+	return &pb.BznMsg{
+		Msg: &pb.BznMsg_Db{
+			Db: &pb.DatabaseMsg{
+				Header: &pb.DatabaseHeader{
+					DbUuid:        blz.Uuid,
+					TransactionId: rand.Uint64(),
+				},
+			},
+		},
 	}
 }
 
@@ -159,15 +165,11 @@ func Connect(endpoint string, port uint32, uuid string) *Bluzelle {
 }
 
 func (blz Bluzelle) Create(k string, v []byte) error {
-	createPb := &pb.DatabaseMsg_Create{Create: &pb.DatabaseCreate{Key: k, Value: v}}
-	msgPb := &pb.BznMsg{
-		Msg: &pb.BznMsg_Db{
-			Db: &pb.DatabaseMsg{
-				Header: blz.pbHeader(),
-				Msg:    createPb,
-			},
-		},
+	msgPb := blz.pbBznMsg()
+	msgPb.GetDb().Msg = &pb.DatabaseMsg_Create{
+		Create: &pb.DatabaseCreate{Key: k, Value: v},
 	}
+
 	_, err := blz.encodeAndSendReq(msgPb)
 	if err != nil {
 		return err
@@ -176,15 +178,11 @@ func (blz Bluzelle) Create(k string, v []byte) error {
 }
 
 func (blz Bluzelle) Read(k string) ([]byte, error) {
-	readPb := &pb.DatabaseMsg_Read{Read: &pb.DatabaseRead{Key: k}}
-	msgPb := &pb.BznMsg{
-		Msg: &pb.BznMsg_Db{
-			Db: &pb.DatabaseMsg{
-				Header: blz.pbHeader(),
-				Msg:    readPb,
-			},
-		},
+	msgPb := blz.pbBznMsg()
+	msgPb.GetDb().Msg = &pb.DatabaseMsg_Read{
+		Read: &pb.DatabaseRead{Key: k},
 	}
+
 	resp, err := blz.encodeAndSendReq(msgPb)
 	if err != nil {
 		return []byte{}, err
@@ -193,15 +191,11 @@ func (blz Bluzelle) Read(k string) ([]byte, error) {
 }
 
 func (blz Bluzelle) Update(k string, v []byte) error {
-	updatePb := &pb.DatabaseMsg_Update{Update: &pb.DatabaseUpdate{Key: k, Value: v}}
-	msgPb := &pb.BznMsg{
-		Msg: &pb.BznMsg_Db{
-			Db: &pb.DatabaseMsg{
-				Header: blz.pbHeader(),
-				Msg:    updatePb,
-			},
-		},
+	msgPb := blz.pbBznMsg()
+	msgPb.GetDb().Msg = &pb.DatabaseMsg_Update{
+		Update: &pb.DatabaseUpdate{Key: k, Value: v},
 	}
+
 	_, err := blz.encodeAndSendReq(msgPb)
 	if err != nil {
 		return err
@@ -210,15 +204,11 @@ func (blz Bluzelle) Update(k string, v []byte) error {
 }
 
 func (blz Bluzelle) Remove(k string) error {
-	deletePb := &pb.DatabaseMsg_Delete{Delete: &pb.DatabaseDelete{Key: k}}
-	msgPb := &pb.BznMsg{
-		Msg: &pb.BznMsg_Db{
-			Db: &pb.DatabaseMsg{
-				Header: blz.pbHeader(),
-				Msg:    deletePb,
-			},
-		},
+	msgPb := blz.pbBznMsg()
+	msgPb.GetDb().Msg = &pb.DatabaseMsg_Delete{
+		Delete: &pb.DatabaseDelete{Key: k},
 	}
+
 	_, err := blz.encodeAndSendReq(msgPb)
 	if err != nil {
 		return err
@@ -227,15 +217,11 @@ func (blz Bluzelle) Remove(k string) error {
 }
 
 func (blz Bluzelle) Has(k string) (bool, error) {
-	hasPb := &pb.DatabaseMsg_Has{Has: &pb.DatabaseHas{Key: k}}
-	msgPb := &pb.BznMsg{
-		Msg: &pb.BznMsg_Db{
-			Db: &pb.DatabaseMsg{
-				Header: blz.pbHeader(),
-				Msg:    hasPb,
-			},
-		},
+	msgPb := blz.pbBznMsg()
+	msgPb.GetDb().Msg = &pb.DatabaseMsg_Has{
+		Has: &pb.DatabaseHas{Key: k},
 	}
+
 	resp, err := blz.encodeAndSendReq(msgPb)
 	if err != nil {
 		return false, err
@@ -244,15 +230,11 @@ func (blz Bluzelle) Has(k string) (bool, error) {
 }
 
 func (blz Bluzelle) Keys() ([]string, error) {
-	keysPb := &pb.DatabaseMsg_Keys{Keys: &pb.DatabaseEmpty{}}
-	msgPb := &pb.BznMsg{
-		Msg: &pb.BznMsg_Db{
-			Db: &pb.DatabaseMsg{
-				Header: blz.pbHeader(),
-				Msg:    keysPb,
-			},
-		},
+	msgPb := blz.pbBznMsg()
+	msgPb.GetDb().Msg = &pb.DatabaseMsg_Keys{
+		Keys: &pb.DatabaseEmpty{},
 	}
+
 	resp, err := blz.encodeAndSendReq(msgPb)
 	if err != nil {
 		return []string{}, err
@@ -261,15 +243,11 @@ func (blz Bluzelle) Keys() ([]string, error) {
 }
 
 func (blz Bluzelle) Size() (int32, error) {
-	sizePb := &pb.DatabaseMsg_Size{Size: &pb.DatabaseEmpty{}}
-	msgPb := &pb.BznMsg{
-		Msg: &pb.BznMsg_Db{
-			Db: &pb.DatabaseMsg{
-				Header: blz.pbHeader(),
-				Msg:    sizePb,
-			},
-		},
+	msgPb := blz.pbBznMsg()
+	msgPb.GetDb().Msg = &pb.DatabaseMsg_Size{
+		Size: &pb.DatabaseEmpty{},
 	}
+
 	resp, err := blz.encodeAndSendReq(msgPb)
 	if err != nil {
 		return 0, err
@@ -317,52 +295,4 @@ func wsConnect(endpoint string, msg string) ([]byte, error) {
 			return []byte{}, ErrConnTimeout
 		}
 	}
-}
-
-func main() {
-
-	// blz := Connect("testnet.bluzelle.com", 51010, "80174b53-2dda-49f1-9d6a-6a780d4")
-
-	// to move cases to bluzelle_test
-
-	// create test case
-	// err := blz.Create("asdf123123", []byte("test123"))
-	// if err != nil {
-	// 	log.Println(err.Error())
-	// }
-
-	// update test case
-	// err := blz.Update("asdf", []byte("test123"))
-	// if err != nil {
-	// 	log.Println(err.Error())
-	// }
-	// // log.Println(string(value[:]))
-
-	// read test case
-	// value, err := blz.Read("asdf")
-	// if err != nil {
-	// 	log.Println(err.Error())
-	// }
-	// log.Println(string(value[:]))
-
-	// size test case
-	// size, err := blz.Size()
-	// if err != nil {
-	// 	log.Println(err.Error())
-	// }
-	// log.Println(size)
-
-	// has test case
-	// has, err := blz.Has("asdf")
-	// if err != nil {
-	// 	log.Println(err.Error())
-	// }
-	// log.Println(has)
-
-	// keys test case
-	// keys, err := blz.Keys()
-	// if err != nil {
-	// 	log.Println(err.Error())
-	// }
-	// log.Println(keys)
 }
