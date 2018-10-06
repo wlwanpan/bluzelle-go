@@ -4,8 +4,11 @@ language: go
 go:
   - '1.9.2'
 
-go_import_path:
-  - github.com/wlwanpan/bluzelle-go
+# before_install:
+#   - go get -u github.com/golang/protobuf/protoc-gen-go
+#   - mkdir -p proto
+#   - protoc -I=internal/proto --go_out=proto bluzelle.proto audit.proto database.proto
 
 script:
-  - go test
+  - go get -t -v ./...
+  - go test -v -race ./..
