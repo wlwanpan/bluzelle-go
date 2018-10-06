@@ -1,5 +1,7 @@
 # Bluzelle-go
 
+[![Build Status](https://travis-ci.org/wlwanpan/bluzelle-go.svg?branch=master)](https://travis-ci.org/bluzelle/swarmDB)
+[![GoDoc](https://godoc.org/github.com/wlwanpan/bluzelle-go?status.svg)](https://godoc.org/github.com/wlwanpan/bluzelle-go)
 [![Gitter chat](https://img.shields.io/gitter/room/nwjs/nw.js.svg?style=flat-square)](https://gitter.im/bluzelle)
 
 ## Getting Started
