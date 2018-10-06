@@ -34,15 +34,17 @@ var (
 	// ErrConnTimeout is returned when websocket connection to the swarm is
 	// longer than the default set limit.
 	ErrConnTimeout = errors.New("Connection timeout")
+
+	// ErrRecordExists is returned when created an record that already exist
+	// on the bluzelle db.
+	ErrRecordExists = errors.New("Bluzelle: Record exists")
+
+	// ErrRecordNotFound is returned when updating, removing or reading
+	// a record that does not exist on the bluzelle db.
+	ErrRecordNotFound = errors.New("Bluzelle: Record not found")
 )
 
-// Bluzelle request api struct
-type BlzReq struct {
-	BznApi string `json:"bzn-api"`
-	Msg    string `json:"msg"`
-}
-
-// Bluzelle representing connection to bluzelle swarmdb
+// Bluzelle representing a connection to bluzelle swarmdb
 type Bluzelle struct {
 	// Websocket addr of leaderhost
 	Endpoint string
@@ -119,8 +121,9 @@ func (blz *Bluzelle) sendRequest(req string) (*pb.DatabaseResponseResponse, erro
 
 	dbRespResp := dbResp.GetResp()
 	respErr := dbRespResp.GetError()
-	if respErr != "" {
-		return &pb.DatabaseResponseResponse{}, errors.New(respErr)
+	err = parseBlzErr(respErr)
+	if err != nil {
+		return &pb.DatabaseResponseResponse{}, err
 	}
 
 	return dbRespResp, nil
@@ -133,7 +136,10 @@ func (blz *Bluzelle) encodeAndSendReq(msg *pb.BznMsg) (*pb.DatabaseResponseRespo
 	}
 
 	encodedBase64 := base64.StdEncoding.EncodeToString(encoded)
-	blzReq := &BlzReq{
+	blzReq := &struct {
+		BznApi string `json:"bzn-api"`
+		Msg    string `json:"msg"`
+	}{
 		BznApi: "database",
 		Msg:    encodedBase64,
 	}
@@ -254,6 +260,16 @@ func (blz Bluzelle) Size() (int32, error) {
 		return 0, err
 	}
 	return resp.GetSize(), nil
+}
+
+func parseBlzErr(e string) error {
+	switch e {
+	case "RECORD_EXISTS":
+		return ErrRecordExists
+	case "RECORD_NOT_FOUND":
+		return ErrRecordNotFound
+	}
+	return nil
 }
 
 func wsConnect(endpoint string, msg string) ([]byte, error) {

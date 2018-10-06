@@ -61,4 +61,9 @@ func TestCreate(t *testing.T) {
 	if v != string(readV[:]) {
 		t.Errorf(errMsgTemplate, "Create", v, readV)
 	}
+
+	err = blz.Create(k, []byte(v))
+	if err != nil && err != ErrRecordExists {
+		t.Errorf(errMsgTemplate, "Create", ErrRecordExists.Error(), err.Error())
+	}
 }
