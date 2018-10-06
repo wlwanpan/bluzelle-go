@@ -12,8 +12,17 @@ var (
 	testnetPort uint32 = 51010
 	testDbUuid  string = "80174b53-2dda-49f1-9d6a-6a780d4"
 
-	errMsgTemplate = "%s Error: expected %s, got %s!"
+	errMsgTemplate = "%s Error: expected %s, got %s"
 )
+
+func randUuid() string {
+	u, _ := uuid.NewRandom()
+	return u.String()
+}
+
+func sleep() {
+	time.Sleep(time.Second)
+}
 
 func TestSetters(t *testing.T) {
 	blz := Connect("", 0, "")
@@ -41,17 +50,15 @@ func TestSetters(t *testing.T) {
 func TestCreate(t *testing.T) {
 	blz := Connect(testnetUrl, testnetPort, testDbUuid)
 
-	randUuid, _ := uuid.NewRandom()
-	k := randUuid.String()
-	randUuid, _ = uuid.NewRandom()
-	v := randUuid.String()
+	k := randUuid()
+	v := randUuid()
 
 	err := blz.Create(k, []byte(v))
 	if err != nil {
 		t.Errorf("Create Error: %s", err.Error())
 	}
 
-	time.Sleep(time.Second) // Allow data propagation
+	sleep() // Allow data propagation
 
 	readV, err := blz.Read(k)
 	if err != nil {
@@ -66,4 +73,44 @@ func TestCreate(t *testing.T) {
 	if err != nil && err != ErrRecordExists {
 		t.Errorf(errMsgTemplate, "Create", ErrRecordExists.Error(), err.Error())
 	}
+}
+
+func TestUpdate(t *testing.T) {
+	blz := Connect(testnetUrl, testnetPort, randUuid())
+
+	k := randUuid()
+	v := randUuid()
+
+	err := blz.Update(k, []byte(v))
+	if err != nil && err != ErrRecordNotFound {
+		t.Errorf(errMsgTemplate, "Update", ErrRecordNotFound.Error(), err.Error())
+	}
+
+	blz.Create(k, []byte(v))
+	sleep()
+
+	updatedV := randUuid()
+	err = blz.Update(k, []byte(updatedV))
+	if err != nil {
+		t.Errorf(errMsgTemplate, "Update", "", err.Error())
+	}
+	sleep()
+
+	readUpdatedV, err := blz.Read(k)
+	if string(readUpdatedV[:]) != updatedV {
+		t.Errorf(errMsgTemplate, "Update", updatedV, string(readUpdatedV[:]))
+	}
+
+}
+
+func TestRemove(t *testing.T) {
+
+}
+
+func TestKeys(t *testing.T) {
+
+}
+
+func TestSize(t *testing.T) {
+
 }
