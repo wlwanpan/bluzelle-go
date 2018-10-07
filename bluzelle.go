@@ -42,9 +42,14 @@ var (
 	// ErrRecordNotFound is returned when updating, removing or reading
 	// a record that does not exist on the bluzelle db.
 	ErrRecordNotFound = errors.New("Bluzelle: Record not found")
+
+	// ErrValueSizeTooLarge is returned when creating or updating with a value
+	// over max limit of 307200 characters.
+	ErrValueSizeTooLarge = errors.New("Bluzelle: Value size too large")
 )
 
-// Bluzelle representing a connection to bluzelle swarmdb
+// The Bluzelle type represents a connection to bluzelle swarmdb.
+// CRUD operations are called this connection.
 type Bluzelle struct {
 	// Websocket addr of leaderhost
 	Endpoint string
@@ -152,6 +157,9 @@ func (blz *Bluzelle) encodeAndSendReq(msg *pb.BznMsg) (*pb.DatabaseResponseRespo
 	return blz.sendRequest(string(req))
 }
 
+// Connect creates a new client connection using the given endpoint, port and db uuid.
+// If zero value args are passed, the connection will default back to localhost with
+// port 51010.
 func Connect(endpoint string, port uint32, uuid string) *Bluzelle {
 	if endpoint == "" {
 		endpoint = DefaultEndpoint
@@ -236,6 +244,7 @@ func (blz Bluzelle) Has(k string) (bool, error) {
 	return resp.GetHas(), nil
 }
 
+// Keys returns a array of all the keys saved on the current db uuid.
 func (blz Bluzelle) Keys() ([]string, error) {
 	msgPb := blz.pbBznMsg()
 	msgPb.GetDb().Msg = &pb.DatabaseMsg_Keys{
@@ -268,6 +277,8 @@ func parseBlzErr(e string) error {
 		return ErrRecordExists
 	case "RECORD_NOT_FOUND":
 		return ErrRecordNotFound
+	case "VALUE_SIZE_TOO_LARGE":
+		return ErrValueSizeTooLarge
 	}
 	return nil
 }
