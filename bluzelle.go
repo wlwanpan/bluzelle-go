@@ -258,7 +258,6 @@ func (blz Bluzelle) Keys() ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
-	log.Println(resp)
 	return resp.GetKeys().GetKeys(), nil
 }
 

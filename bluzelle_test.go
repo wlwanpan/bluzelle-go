@@ -1,6 +1,7 @@
 package bluzelle
 
 import (
+	"encoding/binary"
 	"testing"
 	"time"
 
@@ -47,6 +48,7 @@ func TestSetters(t *testing.T) {
 	}
 }
 
+// To remove < redundant
 func TestCreate(t *testing.T) {
 	blz := Connect(testnetUrl, testnetPort, randUuid())
 
@@ -99,6 +101,56 @@ func TestUpdate(t *testing.T) {
 	readUpdatedV, err := blz.Read(k)
 	if string(readUpdatedV[:]) != updatedV {
 		t.Errorf(errMsgTemplate, "Update", updatedV, string(readUpdatedV[:]))
+	}
+}
+
+func TestHas(t *testing.T) {
+	blz := Connect(testnetUrl, testnetPort, randUuid())
+	k := randUuid()
+
+	has, err := blz.Has(k)
+	if err != nil {
+		t.Errorf("Read Error: %s", err.Error())
+	}
+	if has {
+		t.Errorf(errMsgTemplate, "Has", false, has)
+	}
+
+	err = blz.Create(k, []byte(randUuid()))
+	if err != nil {
+		t.Errorf("Create Error: %s", err.Error())
+	}
+	sleep()
+
+	has, err = blz.Has(k)
+	if err != nil {
+		t.Errorf("Read Error: %s", err.Error())
+	}
+	if !has {
+		t.Errorf(errMsgTemplate, "Has", true, has)
+	}
+}
+
+func TestSize(t *testing.T) {
+	blz := Connect(testnetUrl, testnetPort, randUuid())
+
+	size, err := blz.Size()
+	if err != nil {
+		t.Errorf("Size Error: %s", err.Error())
+	}
+	if size > 0 {
+		t.Errorf(errMsgTemplate, "Size", 0, size)
+	}
+
+	v := []byte(randUuid())
+	eSize := binary.Size(v)
+	blz.Create(randUuid(), v)
+
+	sleep()
+
+	size, err = blz.Size()
+	if int(size) != eSize {
+		t.Errorf(errMsgTemplate, "Size", eSize, size)
 	}
 }
 
