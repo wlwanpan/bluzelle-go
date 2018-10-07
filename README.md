@@ -15,6 +15,11 @@ bluzelle-go is a go client built on top of [WebSocket API](https://bluzelle.gith
 go get github.com/wlwanpan/bluzelle-go
 ```
 
+- Compile protobuf
+```bash
+protoc -I=proto/proto --go_out=cproto proto/proto/*.proto
+```
+
 - Import
 ```go
 import "github.com/wlwanpan/bluzelle-go"
@@ -52,12 +57,12 @@ has, err := blz.Has("key1")
 
 - Keys
 ```go
-keys := blz.Keys()
+keys, err := blz.Keys()
 ```
 
 - Size
 ```go
-size := blz.Size()
+size, err := blz.Size()
 ```
 
 ## Reference

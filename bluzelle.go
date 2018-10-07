@@ -13,7 +13,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
-	"github.com/wlwanpan/bluzelle-go/proto"
+	"github.com/wlwanpan/bluzelle-go/cproto"
 )
 
 // Default const (Might change to swarmdb specs, check open source gitter channel)
@@ -97,47 +97,47 @@ func (blz *Bluzelle) pbBznMsg() *pb.BznMsg {
 	}
 }
 
-func (blz *Bluzelle) sendRequest(req string) (*pb.DatabaseResponseResponse, error) {
-	if blz.redirectAttempt > MaxRedirectLimit {
-		blz.redirectAttempt = 0
-		return &pb.DatabaseResponseResponse{}, ErrRedirectLimit
-	}
+func (blz *Bluzelle) sendRequest(req string) (*pb.DatabaseResponse, error) {
+	redirectCount := 0
 
-	wsAddr := blz.wsAddr()
-	resp, err := wsConnect(wsAddr, req)
-	if err != nil {
-		return &pb.DatabaseResponseResponse{}, err
-	}
+	for {
+		if redirectCount > MaxRedirectLimit {
+			return &pb.DatabaseResponse{}, ErrRedirectLimit
+		}
 
-	dbResp := &pb.DatabaseResponse{}
-	err = proto.Unmarshal(resp, dbResp)
-	if err != nil {
-		return &pb.DatabaseResponseResponse{}, err
-	}
+		resp, err := wsConnect(blz.wsAddr(), req)
+		if err != nil {
+			return &pb.DatabaseResponse{}, err
+		}
 
-	redirect := dbResp.GetRedirect()
-	if redirect != nil {
-		log.Printf("Switching to leader: %v", redirect.GetLeaderName())
-		blz.SetEndpoint(redirect.GetLeaderHost())
-		blz.SetPort(redirect.GetLeaderPort())
-		blz.redirectAttempt++
-		return blz.sendRequest(req)
-	}
+		dbResp := &pb.DatabaseResponse{}
+		err = proto.Unmarshal(resp, dbResp)
+		if err != nil {
+			return &pb.DatabaseResponse{}, err
+		}
 
-	dbRespResp := dbResp.GetResp()
-	respErr := dbRespResp.GetError()
-	err = parseBlzErr(respErr)
-	if err != nil {
-		return &pb.DatabaseResponseResponse{}, err
-	}
+		redirect := dbResp.GetRedirect()
+		if redirect != nil {
+			log.Printf("Switching to leader: %v", redirect.GetLeaderName())
+			blz.SetEndpoint(redirect.GetLeaderHost())
+			blz.SetPort(redirect.GetLeaderPort())
+			redirectCount++
+			continue
+		}
 
-	return dbRespResp, nil
+		dbErr := dbResp.GetError()
+		if dbErr != nil {
+			return &pb.DatabaseResponse{}, parseBlzErr(dbErr)
+		}
+
+		return dbResp, nil
+	}
 }
 
-func (blz *Bluzelle) encodeAndSendReq(msg *pb.BznMsg) (*pb.DatabaseResponseResponse, error) {
+func (blz *Bluzelle) encodeAndSendReq(msg *pb.BznMsg) (*pb.DatabaseResponse, error) {
 	encoded, err := proto.Marshal(msg)
 	if err != nil {
-		return &pb.DatabaseResponseResponse{}, err
+		return &pb.DatabaseResponse{}, err
 	}
 
 	encodedBase64 := base64.StdEncoding.EncodeToString(encoded)
@@ -151,7 +151,7 @@ func (blz *Bluzelle) encodeAndSendReq(msg *pb.BznMsg) (*pb.DatabaseResponseRespo
 
 	req, err := json.Marshal(blzReq)
 	if err != nil {
-		return &pb.DatabaseResponseResponse{}, err
+		return &pb.DatabaseResponse{}, err
 	}
 
 	return blz.sendRequest(string(req))
@@ -192,6 +192,7 @@ func (blz Bluzelle) Create(k string, v []byte) error {
 	return nil
 }
 
+// Read returns the value of the record with the specified key.
 func (blz Bluzelle) Read(k string) ([]byte, error) {
 	msgPb := blz.pbBznMsg()
 	msgPb.GetDb().Msg = &pb.DatabaseMsg_Read{
@@ -202,7 +203,7 @@ func (blz Bluzelle) Read(k string) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
-	return resp.GetValue(), nil
+	return resp.GetRead().GetValue(), nil
 }
 
 func (blz Bluzelle) Update(k string, v []byte) error {
@@ -218,6 +219,7 @@ func (blz Bluzelle) Update(k string, v []byte) error {
 	return nil
 }
 
+// Remove delete the record with the specified key permanently from the db.
 func (blz Bluzelle) Remove(k string) error {
 	msgPb := blz.pbBznMsg()
 	msgPb.GetDb().Msg = &pb.DatabaseMsg_Delete{
@@ -231,6 +233,7 @@ func (blz Bluzelle) Remove(k string) error {
 	return nil
 }
 
+// Has returns true if a record of the key exist in the db else false.
 func (blz Bluzelle) Has(k string) (bool, error) {
 	msgPb := blz.pbBznMsg()
 	msgPb.GetDb().Msg = &pb.DatabaseMsg_Has{
@@ -241,38 +244,40 @@ func (blz Bluzelle) Has(k string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return resp.GetHas(), nil
+	return resp.GetHas().GetHas(), nil
 }
 
-// Keys returns a array of all the keys saved on the current db uuid.
+// Keys returns a array of all the records key saved on the current db uuid.
 func (blz Bluzelle) Keys() ([]string, error) {
 	msgPb := blz.pbBznMsg()
 	msgPb.GetDb().Msg = &pb.DatabaseMsg_Keys{
-		Keys: &pb.DatabaseEmpty{},
+		Keys: &pb.DatabaseRequest{},
 	}
 
 	resp, err := blz.encodeAndSendReq(msgPb)
 	if err != nil {
 		return []string{}, err
 	}
-	return resp.GetKeys(), nil
+	log.Println(resp)
+	return resp.GetKeys().GetKeys(), nil
 }
 
+// Size returns the size of all the records of the db in bytes.
 func (blz Bluzelle) Size() (int32, error) {
 	msgPb := blz.pbBznMsg()
 	msgPb.GetDb().Msg = &pb.DatabaseMsg_Size{
-		Size: &pb.DatabaseEmpty{},
+		Size: &pb.DatabaseRequest{},
 	}
 
 	resp, err := blz.encodeAndSendReq(msgPb)
 	if err != nil {
 		return 0, err
 	}
-	return resp.GetSize(), nil
+	return resp.GetSize().GetBytes(), nil
 }
 
-func parseBlzErr(e string) error {
-	switch e {
+func parseBlzErr(e *pb.DatabaseError) error {
+	switch e.GetMessage() {
 	case "RECORD_EXISTS":
 		return ErrRecordExists
 	case "RECORD_NOT_FOUND":

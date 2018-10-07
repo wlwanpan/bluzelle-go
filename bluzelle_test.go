@@ -10,7 +10,7 @@ import (
 var (
 	testnetUrl  string = "testnet.bluzelle.com"
 	testnetPort uint32 = 51010
-	testDbUuid  string = "80174b53-2dda-49f1-9d6a-6a780d4"
+	testDbUuid  string = "80174b53-2dda-49f1-9d6a-6a780d"
 
 	errMsgTemplate = "%s Error: expected %s, got %s"
 )
@@ -21,7 +21,7 @@ func randUuid() string {
 }
 
 func sleep() {
-	time.Sleep(time.Second)
+	time.Sleep(2 * time.Second)
 }
 
 func TestSetters(t *testing.T) {
@@ -48,7 +48,7 @@ func TestSetters(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	blz := Connect(testnetUrl, testnetPort, testDbUuid)
+	blz := Connect(testnetUrl, testnetPort, randUuid())
 
 	k := randUuid()
 	v := randUuid()
@@ -92,7 +92,7 @@ func TestUpdate(t *testing.T) {
 	updatedV := randUuid()
 	err = blz.Update(k, []byte(updatedV))
 	if err != nil {
-		t.Errorf(errMsgTemplate, "Update", "", err.Error())
+		t.Errorf("Update Error: %s", err.Error())
 	}
 	sleep()
 
@@ -100,17 +100,37 @@ func TestUpdate(t *testing.T) {
 	if string(readUpdatedV[:]) != updatedV {
 		t.Errorf(errMsgTemplate, "Update", updatedV, string(readUpdatedV[:]))
 	}
-
-}
-
-func TestRemove(t *testing.T) {
-
 }
 
 func TestKeys(t *testing.T) {
+	blz := Connect(testnetUrl, testnetPort, randUuid())
 
-}
+	keys, err := blz.Keys()
+	if err != nil {
+		t.Errorf("Keys Error: %s", err.Error())
+	}
+	if len(keys) > 0 {
+		t.Errorf(errMsgTemplate, "Keys", "[]", keys)
+	}
 
-func TestSize(t *testing.T) {
+	n := 3
+	ks := []string{}
+	for i := 0; i < n; i++ {
+		nk := randUuid()
+		err := blz.Create(nk, []byte(""))
+		if err != nil {
+			t.Errorf("Create Error: %s", err.Error())
+		}
+		ks = append(ks, nk)
+		sleep()
+	}
+
+	keys, err = blz.Keys()
+	if err != nil {
+		t.Errorf("Keys Error: %s", err.Error())
+	}
+	if len(keys) != n {
+		t.Errorf(errMsgTemplate, "Keys", ks, keys)
+	}
 
 }
