@@ -12,6 +12,9 @@ go:
 go_import_path:
   - github.com/wlwanpan/bluzelle-go
 
-script:
-  - go get -t -v ./...
-  - go test -v -race ./..
+# script:
+#   - go get -t -v ./...
+#   - go test -v -race ./..
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
