@@ -10,11 +10,8 @@ go:
 #   - mkdir -p proto
 #   - protoc -I=internal/proto --go_out=proto bluzelle.proto audit.proto database.proto
 
-go_import_path:
-  - github.com/wlwanpan/bluzelle-go
-
 script:
-  - go test -v ./...
+  - go test -race -coverprofile=coverage.txt -covermode=atomic
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
