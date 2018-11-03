@@ -159,7 +159,7 @@ func (blz *Bluzelle) encodeAndSendReq(msg *pb.BznMsg) (*pb.DatabaseResponse, err
 
 // Connect creates a new client connection using the given endpoint, port and db uuid.
 // If zero value args are passed, the connection will default back to localhost with
-// port 51010.
+// port 51010 (const default values).
 func Connect(endpoint string, port uint32, uuid string) *Bluzelle {
 	if endpoint == "" {
 		endpoint = DefaultEndpoint
@@ -179,6 +179,7 @@ func Connect(endpoint string, port uint32, uuid string) *Bluzelle {
 	}
 }
 
+// Create saves a new record
 func (blz Bluzelle) Create(k string, v []byte) error {
 	msgPb := blz.pbBznMsg()
 	msgPb.GetDb().Msg = &pb.DatabaseMsg_Create{
@@ -206,6 +207,7 @@ func (blz Bluzelle) Read(k string) ([]byte, error) {
 	return resp.GetRead().GetValue(), nil
 }
 
+// Update the value of the specified key from the db.
 func (blz Bluzelle) Update(k string, v []byte) error {
 	msgPb := blz.pbBznMsg()
 	msgPb.GetDb().Msg = &pb.DatabaseMsg_Update{
@@ -219,7 +221,7 @@ func (blz Bluzelle) Update(k string, v []byte) error {
 	return nil
 }
 
-// Remove delete the record with the specified key permanently from the db.
+// Remove delete the record with the specified key from the db.
 func (blz Bluzelle) Remove(k string) error {
 	msgPb := blz.pbBznMsg()
 	msgPb.GetDb().Msg = &pb.DatabaseMsg_Delete{
@@ -283,8 +285,9 @@ func parseBlzErr(e *pb.DatabaseError) error {
 		return ErrRecordNotFound
 	case "VALUE_SIZE_TOO_LARGE":
 		return ErrValueSizeTooLarge
+	default:
+		return nil
 	}
-	return nil
 }
 
 func wsConnect(endpoint string, msg string) ([]byte, error) {
@@ -301,8 +304,6 @@ func wsConnect(endpoint string, msg string) ([]byte, error) {
 	respChan := make(chan []byte)
 	errChan := make(chan error)
 	go func() {
-		defer close(respChan)
-		defer close(errChan)
 		for {
 			_, r, err := c.ReadMessage()
 			if err != nil {
