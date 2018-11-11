@@ -18,7 +18,7 @@ import (
 
 // Default const (Might change to swarmdb specs, check open source gitter channel)
 const (
-	DefaultUuid     = "8c073d96-7291-11e8-adc0-fa7ae01bbebc"
+	DefaultUUID     = "8c073d96-7291-11e8-adc0-fa7ae01bbebc"
 	DefaultEndpoint = "127.0.0.1"
 	DefaultPort     = 51010
 
@@ -57,8 +57,8 @@ type Bluzelle struct {
 	// Port of leaderhost
 	Port uint32
 
-	// Uuid of db reference on the swarm
-	Uuid string
+	// UUID of db reference on the swarm
+	UUID string
 
 	// redirectAttempt tracks number of leaderhost redirected
 	redirectAttempt uint16
@@ -73,7 +73,7 @@ func (blz *Bluzelle) SetPort(port uint32) {
 }
 
 func (blz *Bluzelle) SetUuid(uuid string) {
-	blz.Uuid = uuid
+	blz.UUID = uuid
 }
 
 // Generate websocket addr from endpoint and port
@@ -89,7 +89,7 @@ func (blz *Bluzelle) pbBznMsg() *pb.BznMsg {
 		Msg: &pb.BznMsg_Db{
 			Db: &pb.DatabaseMsg{
 				Header: &pb.DatabaseHeader{
-					DbUuid:        blz.Uuid,
+					DbUuid:        blz.UUID,
 					TransactionId: rand.Uint64(),
 				},
 			},
@@ -142,10 +142,10 @@ func (blz *Bluzelle) encodeAndSendReq(msg *pb.BznMsg) (*pb.DatabaseResponse, err
 
 	encodedBase64 := base64.StdEncoding.EncodeToString(encoded)
 	blzReq := &struct {
-		BznApi string `json:"bzn-api"`
+		BznAPI string `json:"bzn-api"`
 		Msg    string `json:"msg"`
 	}{
-		BznApi: "database",
+		BznAPI: "database",
 		Msg:    encodedBase64,
 	}
 
@@ -168,13 +168,13 @@ func Connect(endpoint string, port uint32, uuid string) *Bluzelle {
 		port = DefaultPort
 	}
 	if uuid == "" {
-		uuid = DefaultUuid
+		uuid = DefaultUUID
 	}
 
 	return &Bluzelle{
 		Endpoint:        endpoint,
 		Port:            port,
-		Uuid:            uuid,
+		UUID:            uuid,
 		redirectAttempt: 0,
 	}
 }
@@ -321,11 +321,11 @@ func wsConnect(endpoint string, msg string) ([]byte, error) {
 			return resp, nil
 		case err := <-errChan:
 			return []byte{}, err
-		}
-
-		diff := time.Now().Sub(s)
-		if diff >= ConnTimeout {
-			return []byte{}, ErrConnTimeout
+		default:
+			diff := time.Now().Sub(s)
+			if diff >= ConnTimeout {
+				return []byte{}, ErrConnTimeout
+			}
 		}
 	}
 }

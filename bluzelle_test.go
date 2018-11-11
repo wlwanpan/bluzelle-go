@@ -43,8 +43,8 @@ func TestSetters(t *testing.T) {
 	randUuid, _ := uuid.NewRandom()
 	u := randUuid.String()
 	blz.SetUuid(u)
-	if blz.Uuid != u {
-		t.Errorf(errMsgTemplate, "SetUuid", u, blz.Uuid)
+	if blz.UUID != u {
+		t.Errorf(errMsgTemplate, "SetUuid", u, blz.UUID)
 	}
 }
 
@@ -169,7 +169,7 @@ func TestKeys(t *testing.T) {
 	ks := []string{}
 	for i := 0; i < n; i++ {
 		nk := randUuid()
-		err := blz.Create(nk, []byte(""))
+		err = blz.Create(nk, []byte(""))
 		if err != nil {
 			t.Errorf("Create Error: %s", err.Error())
 		}
