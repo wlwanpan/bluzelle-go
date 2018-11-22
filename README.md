@@ -28,7 +28,7 @@ import "github.com/wlwanpan/bluzelle-go"
 
 - Initialize
 ```go
-blz := Connect("127.0.0.1", 51010, "80174b53-2dda-49f1-9d6a-6a780d4")
+blz := blz.Connect("127.0.0.1", 51010, "80174b53-2dda-49f1-9d6a-6a780d4")
 ```
 
 ## List of API
