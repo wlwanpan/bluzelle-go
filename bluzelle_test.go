@@ -9,14 +9,14 @@ import (
 )
 
 var (
-	testnetUrl  string = "testnet.bluzelle.com"
 	testnetPort uint32 = 51010
-	testDbUuid  string = "80174b53-2dda-49f1-9d6a-6a780d"
+	testnetURL         = "testnet.bluzelle.com"
+	testDbUUID         = "80174b53-2dda-49f1-9d6a-6a780d"
 
 	errMsgTemplate = "%s Error: expected %s, got %s"
 )
 
-func randUuid() string {
+func randUUID() string {
 	u, _ := uuid.NewRandom()
 	return u.String()
 }
@@ -40,8 +40,8 @@ func TestSetters(t *testing.T) {
 		t.Errorf(errMsgTemplate, "SetPort", p, blz.Port)
 	}
 
-	randUuid, _ := uuid.NewRandom()
-	u := randUuid.String()
+	randUUID, _ := uuid.NewRandom()
+	u := randUUID.String()
 	blz.SetUuid(u)
 	if blz.UUID != u {
 		t.Errorf(errMsgTemplate, "SetUuid", u, blz.UUID)
@@ -50,10 +50,10 @@ func TestSetters(t *testing.T) {
 
 // To remove < redundant
 func TestCreate(t *testing.T) {
-	blz := Connect(testnetUrl, testnetPort, randUuid())
+	blz := Connect(testnetURL, testnetPort, randUUID())
 
-	k := randUuid()
-	v := randUuid()
+	k := randUUID()
+	v := randUUID()
 
 	err := blz.Create(k, []byte(v))
 	if err != nil {
@@ -78,10 +78,10 @@ func TestCreate(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	blz := Connect(testnetUrl, testnetPort, randUuid())
+	blz := Connect(testnetURL, testnetPort, randUUID())
 
-	k := randUuid()
-	v := randUuid()
+	k := randUUID()
+	v := randUUID()
 
 	err := blz.Update(k, []byte(v))
 	if err != nil && err != ErrRecordNotFound {
@@ -91,7 +91,7 @@ func TestUpdate(t *testing.T) {
 	blz.Create(k, []byte(v))
 	sleep()
 
-	updatedV := randUuid()
+	updatedV := randUUID()
 	err = blz.Update(k, []byte(updatedV))
 	if err != nil {
 		t.Errorf("Update Error: %s", err.Error())
@@ -104,9 +104,34 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+func TestRemove(t *testing.T) {
+	blz := Connect(testnetURL, testnetPort, randUUID())
+	k := randUUID()
+
+	if err := blz.Create(k, []byte(randUUID())); err != nil {
+		t.Errorf("Create Error: %s", err.Error())
+	}
+	sleep()
+	if err := blz.Remove(k); err != nil {
+		t.Errorf("Remove Error: %s", err.Error())
+	}
+	sleep()
+	has, err := blz.Has(k)
+	if err != nil {
+		t.Errorf("Has Error: %s", err.Error())
+	}
+	if has {
+		t.Errorf(errMsgTemplate, "Remove", false, has)
+	}
+
+	if err := blz.Remove(randUUID()); err != ErrRecordNotFound {
+		t.Errorf(errMsgTemplate, "Remove", ErrRecordNotFound.Error(), err)
+	}
+}
+
 func TestHas(t *testing.T) {
-	blz := Connect(testnetUrl, testnetPort, randUuid())
-	k := randUuid()
+	blz := Connect(testnetURL, testnetPort, randUUID())
+	k := randUUID()
 
 	has, err := blz.Has(k)
 	if err != nil {
@@ -116,7 +141,7 @@ func TestHas(t *testing.T) {
 		t.Errorf(errMsgTemplate, "Has", false, has)
 	}
 
-	err = blz.Create(k, []byte(randUuid()))
+	err = blz.Create(k, []byte(randUUID()))
 	if err != nil {
 		t.Errorf("Create Error: %s", err.Error())
 	}
@@ -132,7 +157,7 @@ func TestHas(t *testing.T) {
 }
 
 func TestSize(t *testing.T) {
-	blz := Connect(testnetUrl, testnetPort, randUuid())
+	blz := Connect(testnetURL, testnetPort, randUUID())
 
 	size, err := blz.Size()
 	if err != nil {
@@ -142,9 +167,9 @@ func TestSize(t *testing.T) {
 		t.Errorf(errMsgTemplate, "Size", 0, size)
 	}
 
-	v := []byte(randUuid())
+	v := []byte(randUUID())
 	eSize := binary.Size(v)
-	blz.Create(randUuid(), v)
+	blz.Create(randUUID(), v)
 
 	sleep()
 
@@ -155,7 +180,7 @@ func TestSize(t *testing.T) {
 }
 
 func TestKeys(t *testing.T) {
-	blz := Connect(testnetUrl, testnetPort, randUuid())
+	blz := Connect(testnetURL, testnetPort, randUUID())
 
 	keys, err := blz.Keys()
 	if err != nil {
@@ -168,7 +193,7 @@ func TestKeys(t *testing.T) {
 	n := 3
 	ks := []string{}
 	for i := 0; i < n; i++ {
-		nk := randUuid()
+		nk := randUUID()
 		err = blz.Create(nk, []byte(""))
 		if err != nil {
 			t.Errorf("Create Error: %s", err.Error())
@@ -184,5 +209,4 @@ func TestKeys(t *testing.T) {
 	if len(keys) != n {
 		t.Errorf(errMsgTemplate, "Keys", ks, keys)
 	}
-
 }
