@@ -2,6 +2,7 @@ package bluzelle
 
 import (
 	"encoding/binary"
+	"log"
 	"testing"
 	"time"
 
@@ -26,7 +27,10 @@ func sleep() {
 }
 
 func TestSetters(t *testing.T) {
-	blz := Connect("", 0, "")
+	blz, err := Connect("", 0, "")
+	if err != nil {
+		log.Println(err)
+	}
 
 	e := "testnet.bluzelle.ca"
 	blz.SetEndpoint(e)
@@ -50,12 +54,15 @@ func TestSetters(t *testing.T) {
 
 // To remove < redundant
 func TestCreate(t *testing.T) {
-	blz := Connect(testnetURL, testnetPort, randUUID())
+	blz, err := Connect(testnetURL, testnetPort, randUUID())
+	if err != nil {
+		log.Println(err)
+	}
 
 	k := randUUID()
 	v := randUUID()
 
-	err := blz.Create(k, []byte(v))
+	err = blz.Create(k, []byte(v))
 	if err != nil {
 		t.Errorf("Create Error: %s", err.Error())
 	}
@@ -78,7 +85,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	blz := Connect(testnetURL, testnetPort, randUUID())
+	blz, _ := Connect(testnetURL, testnetPort, randUUID())
 
 	k := randUUID()
 	v := randUUID()
@@ -105,7 +112,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
-	blz := Connect(testnetURL, testnetPort, randUUID())
+	blz, _ := Connect(testnetURL, testnetPort, randUUID())
 	k := randUUID()
 
 	if err := blz.Create(k, []byte(randUUID())); err != nil {
@@ -130,7 +137,7 @@ func TestRemove(t *testing.T) {
 }
 
 func TestHas(t *testing.T) {
-	blz := Connect(testnetURL, testnetPort, randUUID())
+	blz, _ := Connect(testnetURL, testnetPort, randUUID())
 	k := randUUID()
 
 	has, err := blz.Has(k)
@@ -157,7 +164,7 @@ func TestHas(t *testing.T) {
 }
 
 func TestSize(t *testing.T) {
-	blz := Connect(testnetURL, testnetPort, randUUID())
+	blz, _ := Connect(testnetURL, testnetPort, randUUID())
 
 	size, err := blz.Size()
 	if err != nil {
@@ -180,7 +187,7 @@ func TestSize(t *testing.T) {
 }
 
 func TestKeys(t *testing.T) {
-	blz := Connect(testnetURL, testnetPort, randUUID())
+	blz, _ := Connect(testnetURL, testnetPort, randUUID())
 
 	keys, err := blz.Keys()
 	if err != nil {

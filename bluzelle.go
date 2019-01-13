@@ -97,7 +97,7 @@ func (blz *Bluzelle) pbBznMsg() *pb.BznMsg {
 	}
 }
 
-func (blz *Bluzelle) sendRequest(req string) (*pb.DatabaseResponse, error) {
+func (blz *Bluzelle) sendRequest(req []byte) (*pb.DatabaseResponse, error) {
 	redirectCount := 0
 
 	for {
@@ -105,7 +105,7 @@ func (blz *Bluzelle) sendRequest(req string) (*pb.DatabaseResponse, error) {
 			return &pb.DatabaseResponse{}, ErrRedirectLimit
 		}
 
-		resp, err := wsConnect(blz.wsAddr(), req)
+		resp, err := wsConnect(websocket.TextMessage, req, blz.wsAddr())
 		if err != nil {
 			return &pb.DatabaseResponse{}, err
 		}
@@ -154,13 +154,18 @@ func (blz *Bluzelle) encodeAndSendReq(msg *pb.BznMsg) (*pb.DatabaseResponse, err
 		return &pb.DatabaseResponse{}, err
 	}
 
-	return blz.sendRequest(string(req))
+	return blz.sendRequest(req)
+}
+
+func (blz *Bluzelle) sendPing() error {
+	_, err := wsConnect(websocket.PingMessage, []byte{}, blz.wsAddr())
+	return err
 }
 
 // Connect creates a new client connection using the given endpoint, port and db uuid.
 // If zero value args are passed, the connection will default back to localhost with
 // port 51010 (const default values).
-func Connect(endpoint string, port uint32, uuid string) *Bluzelle {
+func Connect(endpoint string, port uint32, uuid string) (*Bluzelle, error) {
 	if endpoint == "" {
 		endpoint = DefaultEndpoint
 	}
@@ -171,12 +176,16 @@ func Connect(endpoint string, port uint32, uuid string) *Bluzelle {
 		uuid = DefaultUUID
 	}
 
-	return &Bluzelle{
+	blz := &Bluzelle{
 		Endpoint:        endpoint,
 		Port:            port,
 		UUID:            uuid,
 		redirectAttempt: 0,
 	}
+	if err := blz.sendPing(); err != nil {
+		return &Bluzelle{}, err
+	}
+	return blz, nil
 }
 
 // Create saves a new record
@@ -290,7 +299,7 @@ func parseBlzErr(e *pb.DatabaseError) error {
 	}
 }
 
-func wsConnect(endpoint string, msg string) ([]byte, error) {
+func wsConnect(msgType int, msg []byte, endpoint string) ([]byte, error) {
 	s := time.Now()
 	u := url.URL{Scheme: "ws", Host: endpoint}
 	log.Println("Connecting to: ", u.String())
@@ -314,7 +323,7 @@ func wsConnect(endpoint string, msg string) ([]byte, error) {
 		}
 	}()
 
-	c.WriteMessage(websocket.TextMessage, []byte(msg))
+	c.WriteMessage(msgType, msg)
 	for {
 		select {
 		case resp := <-respChan:
