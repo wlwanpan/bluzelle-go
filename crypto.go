@@ -1,14 +1,24 @@
 package main
 
-import "crypto/rsa"
+import (
+	"crypto/x509"
+	"crypto/rsa"
+	"encoding/pem"
+)
 
 type Crypto struct {
-	PublicKey
+	// PublicKey
 
 	privateKey *rsa.PrivateKey
 }
 
-func NewCrypto(pem string) {
-	p := []byte(pem)
-	privateKey, err := rsa.GenerateKey(p, len(p))
+func GenBlz() {}
+
+func PublicKey(privatePem string) (*rsa.PublicKey, error) {
+	block, _ := pem.Decode([]byte(privatePem))
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	return cert.PublicKey.(*rsa.PublicKey), nil
 }
