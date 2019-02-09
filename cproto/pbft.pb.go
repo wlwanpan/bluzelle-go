@@ -24,29 +24,38 @@ type PbftMsgType int32
 
 const (
 	PbftMsgType_PBFT_MSG_UNDEFINED  PbftMsgType = 0
-	PbftMsgType_PBFT_MSG_REQUEST    PbftMsgType = 1
 	PbftMsgType_PBFT_MSG_PREPREPARE PbftMsgType = 2
 	PbftMsgType_PBFT_MSG_PREPARE    PbftMsgType = 3
 	PbftMsgType_PBFT_MSG_COMMIT     PbftMsgType = 4
 	PbftMsgType_PBFT_MSG_CHECKPOINT PbftMsgType = 5
+	PbftMsgType_PBFT_MSG_JOIN       PbftMsgType = 6
+	PbftMsgType_PBFT_MSG_LEAVE      PbftMsgType = 7
+	PbftMsgType_PBFT_MSG_VIEWCHANGE PbftMsgType = 8
+	PbftMsgType_PBFT_MSG_NEWVIEW    PbftMsgType = 9
 )
 
 var PbftMsgType_name = map[int32]string{
 	0: "PBFT_MSG_UNDEFINED",
-	1: "PBFT_MSG_REQUEST",
 	2: "PBFT_MSG_PREPREPARE",
 	3: "PBFT_MSG_PREPARE",
 	4: "PBFT_MSG_COMMIT",
 	5: "PBFT_MSG_CHECKPOINT",
+	6: "PBFT_MSG_JOIN",
+	7: "PBFT_MSG_LEAVE",
+	8: "PBFT_MSG_VIEWCHANGE",
+	9: "PBFT_MSG_NEWVIEW",
 }
 
 var PbftMsgType_value = map[string]int32{
 	"PBFT_MSG_UNDEFINED":  0,
-	"PBFT_MSG_REQUEST":    1,
 	"PBFT_MSG_PREPREPARE": 2,
 	"PBFT_MSG_PREPARE":    3,
 	"PBFT_MSG_COMMIT":     4,
 	"PBFT_MSG_CHECKPOINT": 5,
+	"PBFT_MSG_JOIN":       6,
+	"PBFT_MSG_LEAVE":      7,
+	"PBFT_MSG_VIEWCHANGE": 8,
+	"PBFT_MSG_NEWVIEW":    9,
 }
 
 func (x PbftMsgType) String() string {
@@ -57,19 +66,70 @@ func (PbftMsgType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_6cc19f28ccff0670, []int{0}
 }
 
+type PbftMembershipMsgType int32
+
+const (
+	PbftMembershipMsgType_PBFT_MMSG_UNDEFINED     PbftMembershipMsgType = 0
+	PbftMembershipMsgType_PBFT_MMSG_JOIN          PbftMembershipMsgType = 1
+	PbftMembershipMsgType_PBFT_MMSG_JOIN_RESPONSE PbftMembershipMsgType = 2
+	PbftMembershipMsgType_PBFT_MMSG_LEAVE         PbftMembershipMsgType = 3
+	PbftMembershipMsgType_PBFT_MMSG_GET_STATE     PbftMembershipMsgType = 4
+	PbftMembershipMsgType_PBFT_MMSG_SET_STATE     PbftMembershipMsgType = 5
+)
+
+var PbftMembershipMsgType_name = map[int32]string{
+	0: "PBFT_MMSG_UNDEFINED",
+	1: "PBFT_MMSG_JOIN",
+	2: "PBFT_MMSG_JOIN_RESPONSE",
+	3: "PBFT_MMSG_LEAVE",
+	4: "PBFT_MMSG_GET_STATE",
+	5: "PBFT_MMSG_SET_STATE",
+}
+
+var PbftMembershipMsgType_value = map[string]int32{
+	"PBFT_MMSG_UNDEFINED":     0,
+	"PBFT_MMSG_JOIN":          1,
+	"PBFT_MMSG_JOIN_RESPONSE": 2,
+	"PBFT_MMSG_LEAVE":         3,
+	"PBFT_MMSG_GET_STATE":     4,
+	"PBFT_MMSG_SET_STATE":     5,
+}
+
+func (x PbftMembershipMsgType) String() string {
+	return proto.EnumName(PbftMembershipMsgType_name, int32(x))
+}
+
+func (PbftMembershipMsgType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_6cc19f28ccff0670, []int{1}
+}
+
 type PbftMsg struct {
 	Type PbftMsgType `protobuf:"varint,1,opt,name=type,proto3,enum=pb.PbftMsgType" json:"type,omitempty"`
-	// used for preprepare, prepare, commit
+	// used for preprepare, prepare, commit, viewchange(v+1)
 	View uint64 `protobuf:"varint,2,opt,name=view,proto3" json:"view,omitempty"`
-	// used for preprepare, prepare, commit, checkpoint
+	// used for preprepare, prepare, commit, checkpoint, viewchange (last valid checkpoint sequence)
 	Sequence uint64 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	// used for preprepare, prepare, commit, request
-	// TODO: Most messages should contain only the hash of the request - KEP-344
-	Request *PbftRequest `protobuf:"bytes,4,opt,name=request,proto3" json:"request,omitempty"`
-	// Needed for prepare, commit, request, checkpoing, but included always for clarity. This is the sender's uuid.
-	Sender string `protobuf:"bytes,5,opt,name=sender,proto3" json:"sender,omitempty"`
+	// used for preprepare, prepare, commit
+	RequestHash []byte `protobuf:"bytes,5,opt,name=request_hash,json=requestHash,proto3" json:"request_hash,omitempty"`
+	// most messages should only have the hash, not the original request
+	Request *BznEnvelope `protobuf:"bytes,4,opt,name=request,proto3" json:"request,omitempty"`
 	// for checkpoints
-	StateHash            string   `protobuf:"bytes,6,opt,name=state_hash,json=stateHash,proto3" json:"state_hash,omitempty"`
+	StateHash string `protobuf:"bytes,6,opt,name=state_hash,json=stateHash,proto3" json:"state_hash,omitempty"`
+	// for join/leave requests
+	PeerInfo *PbftPeerInfo `protobuf:"bytes,7,opt,name=peer_info,json=peerInfo,proto3" json:"peer_info,omitempty"`
+	// for viewchange
+	CheckpointMessages []*BznEnvelope `protobuf:"bytes,8,rep,name=checkpoint_messages,json=checkpointMessages,proto3" json:"checkpoint_messages,omitempty"`
+	// for viewchange, and newview (O)
+	// P, p_m, O
+	PreparedProofs []*PreparedProof `protobuf:"bytes,9,rep,name=prepared_proofs,json=preparedProofs,proto3" json:"prepared_proofs,omitempty"`
+	// for newview
+	// V valid view change messages
+	ViewchangeMessages []*BznEnvelope `protobuf:"bytes,11,rep,name=viewchange_messages,json=viewchangeMessages,proto3" json:"viewchange_messages,omitempty"`
+	PrePrepareMessages []*BznEnvelope `protobuf:"bytes,12,rep,name=pre_prepare_messages,json=prePrepareMessages,proto3" json:"pre_prepare_messages,omitempty"`
+	// for newview
+	ConfigHash string `protobuf:"bytes,13,opt,name=config_hash,json=configHash,proto3" json:"config_hash,omitempty"`
+	// for newview
+	Config               string   `protobuf:"bytes,14,opt,name=config,proto3" json:"config,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -121,18 +181,18 @@ func (m *PbftMsg) GetSequence() uint64 {
 	return 0
 }
 
-func (m *PbftMsg) GetRequest() *PbftRequest {
+func (m *PbftMsg) GetRequestHash() []byte {
 	if m != nil {
-		return m.Request
+		return m.RequestHash
 	}
 	return nil
 }
 
-func (m *PbftMsg) GetSender() string {
+func (m *PbftMsg) GetRequest() *BznEnvelope {
 	if m != nil {
-		return m.Sender
+		return m.Request
 	}
-	return ""
+	return nil
 }
 
 func (m *PbftMsg) GetStateHash() string {
@@ -142,91 +202,361 @@ func (m *PbftMsg) GetStateHash() string {
 	return ""
 }
 
-type PbftRequest struct {
-	Operation            *DatabaseMsg `protobuf:"bytes,1,opt,name=operation,proto3" json:"operation,omitempty"`
-	Timestamp            uint64       `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Client               string       `protobuf:"bytes,3,opt,name=client,proto3" json:"client,omitempty"`
+func (m *PbftMsg) GetPeerInfo() *PbftPeerInfo {
+	if m != nil {
+		return m.PeerInfo
+	}
+	return nil
+}
+
+func (m *PbftMsg) GetCheckpointMessages() []*BznEnvelope {
+	if m != nil {
+		return m.CheckpointMessages
+	}
+	return nil
+}
+
+func (m *PbftMsg) GetPreparedProofs() []*PreparedProof {
+	if m != nil {
+		return m.PreparedProofs
+	}
+	return nil
+}
+
+func (m *PbftMsg) GetViewchangeMessages() []*BznEnvelope {
+	if m != nil {
+		return m.ViewchangeMessages
+	}
+	return nil
+}
+
+func (m *PbftMsg) GetPrePrepareMessages() []*BznEnvelope {
+	if m != nil {
+		return m.PrePrepareMessages
+	}
+	return nil
+}
+
+func (m *PbftMsg) GetConfigHash() string {
+	if m != nil {
+		return m.ConfigHash
+	}
+	return ""
+}
+
+func (m *PbftMsg) GetConfig() string {
+	if m != nil {
+		return m.Config
+	}
+	return ""
+}
+
+type PbftConfigMsg struct {
+	// for new_config
+	Configuration        string   `protobuf:"bytes,1,opt,name=configuration,proto3" json:"configuration,omitempty"`
+	JoinRequestHash      []byte   `protobuf:"bytes,2,opt,name=join_request_hash,json=joinRequestHash,proto3" json:"join_request_hash,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *PbftConfigMsg) Reset()         { *m = PbftConfigMsg{} }
+func (m *PbftConfigMsg) String() string { return proto.CompactTextString(m) }
+func (*PbftConfigMsg) ProtoMessage()    {}
+func (*PbftConfigMsg) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6cc19f28ccff0670, []int{1}
+}
+
+func (m *PbftConfigMsg) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_PbftConfigMsg.Unmarshal(m, b)
+}
+func (m *PbftConfigMsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_PbftConfigMsg.Marshal(b, m, deterministic)
+}
+func (m *PbftConfigMsg) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PbftConfigMsg.Merge(m, src)
+}
+func (m *PbftConfigMsg) XXX_Size() int {
+	return xxx_messageInfo_PbftConfigMsg.Size(m)
+}
+func (m *PbftConfigMsg) XXX_DiscardUnknown() {
+	xxx_messageInfo_PbftConfigMsg.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PbftConfigMsg proto.InternalMessageInfo
+
+func (m *PbftConfigMsg) GetConfiguration() string {
+	if m != nil {
+		return m.Configuration
+	}
+	return ""
+}
+
+func (m *PbftConfigMsg) GetJoinRequestHash() []byte {
+	if m != nil {
+		return m.JoinRequestHash
+	}
+	return nil
+}
+
+type PbftMembershipMsg struct {
+	Type PbftMembershipMsgType `protobuf:"varint,1,opt,name=type,proto3,enum=pb.PbftMembershipMsgType" json:"type,omitempty"`
+	// for join/leave requests
+	PeerInfo *PbftPeerInfo `protobuf:"bytes,2,opt,name=peer_info,json=peerInfo,proto3" json:"peer_info,omitempty"`
+	// for get_state, set_state
+	Sequence  uint64 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	StateHash string `protobuf:"bytes,4,opt,name=state_hash,json=stateHash,proto3" json:"state_hash,omitempty"`
+	// for set_state
+	StateData            string       `protobuf:"bytes,5,opt,name=state_data,json=stateData,proto3" json:"state_data,omitempty"`
+	NewviewMsg           *BznEnvelope `protobuf:"bytes,6,opt,name=newview_msg,json=newviewMsg,proto3" json:"newview_msg,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_unrecognized     []byte       `json:"-"`
 	XXX_sizecache        int32        `json:"-"`
 }
 
-func (m *PbftRequest) Reset()         { *m = PbftRequest{} }
-func (m *PbftRequest) String() string { return proto.CompactTextString(m) }
-func (*PbftRequest) ProtoMessage()    {}
-func (*PbftRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6cc19f28ccff0670, []int{1}
+func (m *PbftMembershipMsg) Reset()         { *m = PbftMembershipMsg{} }
+func (m *PbftMembershipMsg) String() string { return proto.CompactTextString(m) }
+func (*PbftMembershipMsg) ProtoMessage()    {}
+func (*PbftMembershipMsg) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6cc19f28ccff0670, []int{2}
 }
 
-func (m *PbftRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_PbftRequest.Unmarshal(m, b)
+func (m *PbftMembershipMsg) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_PbftMembershipMsg.Unmarshal(m, b)
 }
-func (m *PbftRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_PbftRequest.Marshal(b, m, deterministic)
+func (m *PbftMembershipMsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_PbftMembershipMsg.Marshal(b, m, deterministic)
 }
-func (m *PbftRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PbftRequest.Merge(m, src)
+func (m *PbftMembershipMsg) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PbftMembershipMsg.Merge(m, src)
 }
-func (m *PbftRequest) XXX_Size() int {
-	return xxx_messageInfo_PbftRequest.Size(m)
+func (m *PbftMembershipMsg) XXX_Size() int {
+	return xxx_messageInfo_PbftMembershipMsg.Size(m)
 }
-func (m *PbftRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_PbftRequest.DiscardUnknown(m)
+func (m *PbftMembershipMsg) XXX_DiscardUnknown() {
+	xxx_messageInfo_PbftMembershipMsg.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_PbftRequest proto.InternalMessageInfo
+var xxx_messageInfo_PbftMembershipMsg proto.InternalMessageInfo
 
-func (m *PbftRequest) GetOperation() *DatabaseMsg {
+func (m *PbftMembershipMsg) GetType() PbftMembershipMsgType {
 	if m != nil {
-		return m.Operation
+		return m.Type
+	}
+	return PbftMembershipMsgType_PBFT_MMSG_UNDEFINED
+}
+
+func (m *PbftMembershipMsg) GetPeerInfo() *PbftPeerInfo {
+	if m != nil {
+		return m.PeerInfo
 	}
 	return nil
 }
 
-func (m *PbftRequest) GetTimestamp() uint64 {
+func (m *PbftMembershipMsg) GetSequence() uint64 {
 	if m != nil {
-		return m.Timestamp
+		return m.Sequence
 	}
 	return 0
 }
 
-func (m *PbftRequest) GetClient() string {
+func (m *PbftMembershipMsg) GetStateHash() string {
 	if m != nil {
-		return m.Client
+		return m.StateHash
 	}
 	return ""
 }
 
+func (m *PbftMembershipMsg) GetStateData() string {
+	if m != nil {
+		return m.StateData
+	}
+	return ""
+}
+
+func (m *PbftMembershipMsg) GetNewviewMsg() *BznEnvelope {
+	if m != nil {
+		return m.NewviewMsg
+	}
+	return nil
+}
+
+type PbftPeerInfo struct {
+	Host                 string   `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
+	Port                 uint32   `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	HttpPort             uint32   `protobuf:"varint,3,opt,name=http_port,json=httpPort,proto3" json:"http_port,omitempty"`
+	Name                 string   `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	Uuid                 string   `protobuf:"bytes,5,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *PbftPeerInfo) Reset()         { *m = PbftPeerInfo{} }
+func (m *PbftPeerInfo) String() string { return proto.CompactTextString(m) }
+func (*PbftPeerInfo) ProtoMessage()    {}
+func (*PbftPeerInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6cc19f28ccff0670, []int{3}
+}
+
+func (m *PbftPeerInfo) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_PbftPeerInfo.Unmarshal(m, b)
+}
+func (m *PbftPeerInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_PbftPeerInfo.Marshal(b, m, deterministic)
+}
+func (m *PbftPeerInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PbftPeerInfo.Merge(m, src)
+}
+func (m *PbftPeerInfo) XXX_Size() int {
+	return xxx_messageInfo_PbftPeerInfo.Size(m)
+}
+func (m *PbftPeerInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_PbftPeerInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PbftPeerInfo proto.InternalMessageInfo
+
+func (m *PbftPeerInfo) GetHost() string {
+	if m != nil {
+		return m.Host
+	}
+	return ""
+}
+
+func (m *PbftPeerInfo) GetPort() uint32 {
+	if m != nil {
+		return m.Port
+	}
+	return 0
+}
+
+func (m *PbftPeerInfo) GetHttpPort() uint32 {
+	if m != nil {
+		return m.HttpPort
+	}
+	return 0
+}
+
+func (m *PbftPeerInfo) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *PbftPeerInfo) GetUuid() string {
+	if m != nil {
+		return m.Uuid
+	}
+	return ""
+}
+
+type PreparedProof struct {
+	PrePrepare           *BznEnvelope   `protobuf:"bytes,1,opt,name=pre_prepare,json=prePrepare,proto3" json:"pre_prepare,omitempty"`
+	Prepare              []*BznEnvelope `protobuf:"bytes,2,rep,name=prepare,proto3" json:"prepare,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
+}
+
+func (m *PreparedProof) Reset()         { *m = PreparedProof{} }
+func (m *PreparedProof) String() string { return proto.CompactTextString(m) }
+func (*PreparedProof) ProtoMessage()    {}
+func (*PreparedProof) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6cc19f28ccff0670, []int{4}
+}
+
+func (m *PreparedProof) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_PreparedProof.Unmarshal(m, b)
+}
+func (m *PreparedProof) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_PreparedProof.Marshal(b, m, deterministic)
+}
+func (m *PreparedProof) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PreparedProof.Merge(m, src)
+}
+func (m *PreparedProof) XXX_Size() int {
+	return xxx_messageInfo_PreparedProof.Size(m)
+}
+func (m *PreparedProof) XXX_DiscardUnknown() {
+	xxx_messageInfo_PreparedProof.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PreparedProof proto.InternalMessageInfo
+
+func (m *PreparedProof) GetPrePrepare() *BznEnvelope {
+	if m != nil {
+		return m.PrePrepare
+	}
+	return nil
+}
+
+func (m *PreparedProof) GetPrepare() []*BznEnvelope {
+	if m != nil {
+		return m.Prepare
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterEnum("pb.PbftMsgType", PbftMsgType_name, PbftMsgType_value)
+	proto.RegisterEnum("pb.PbftMembershipMsgType", PbftMembershipMsgType_name, PbftMembershipMsgType_value)
 	proto.RegisterType((*PbftMsg)(nil), "pb.pbft_msg")
-	proto.RegisterType((*PbftRequest)(nil), "pb.pbft_request")
+	proto.RegisterType((*PbftConfigMsg)(nil), "pb.pbft_config_msg")
+	proto.RegisterType((*PbftMembershipMsg)(nil), "pb.pbft_membership_msg")
+	proto.RegisterType((*PbftPeerInfo)(nil), "pb.pbft_peer_info")
+	proto.RegisterType((*PreparedProof)(nil), "pb.prepared_proof")
 }
 
 func init() { proto.RegisterFile("pbft.proto", fileDescriptor_6cc19f28ccff0670) }
 
 var fileDescriptor_6cc19f28ccff0670 = []byte{
-	// 338 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x91, 0x5f, 0x4e, 0xf2, 0x40,
-	0x14, 0xc5, 0xbf, 0x81, 0xc2, 0x47, 0xaf, 0x8a, 0xf5, 0x62, 0xb0, 0x21, 0x9a, 0x34, 0x24, 0x26,
-	0x0d, 0x0f, 0x7d, 0xc0, 0x15, 0x28, 0x14, 0x21, 0x86, 0x3f, 0x0e, 0xe5, 0xb9, 0x99, 0xc2, 0x28,
-	0x4d, 0xa4, 0xad, 0x9d, 0x51, 0xe3, 0x56, 0x5c, 0x8f, 0x0b, 0x33, 0x1d, 0xdb, 0x22, 0x49, 0x1f,
-	0xee, 0xfd, 0x9d, 0x93, 0xd3, 0x39, 0x33, 0x00, 0x49, 0xf0, 0x24, 0x9d, 0x24, 0x8d, 0x65, 0x8c,
-	0x95, 0x24, 0xe8, 0x34, 0x37, 0x4c, 0xb2, 0x80, 0x09, 0xfe, 0xcb, 0xba, 0xdf, 0x04, 0x1a, 0x99,
-	0xc5, 0xdf, 0x89, 0x67, 0xbc, 0x06, 0x4d, 0x7e, 0x26, 0xdc, 0x24, 0x16, 0xb1, 0x9b, 0xfd, 0x33,
-	0x27, 0x09, 0x9c, 0x42, 0xf3, 0x33, 0x81, 0x2a, 0x19, 0x11, 0xb4, 0xf7, 0x90, 0x7f, 0x98, 0x15,
-	0x8b, 0xd8, 0x1a, 0x55, 0x33, 0x76, 0xa0, 0x21, 0xf8, 0xeb, 0x1b, 0x8f, 0xd6, 0xdc, 0xac, 0x2a,
-	0x5e, 0xee, 0xd8, 0x83, 0xff, 0x69, 0x36, 0x0b, 0x69, 0x6a, 0x16, 0xb1, 0x8f, 0xfa, 0x46, 0x99,
-	0x9c, 0x73, 0x5a, 0x18, 0xb0, 0x0d, 0x75, 0xc1, 0xa3, 0x0d, 0x4f, 0xcd, 0x9a, 0x45, 0x6c, 0x9d,
-	0xe6, 0x1b, 0x5e, 0x01, 0x08, 0xc9, 0x24, 0xf7, 0xb7, 0x4c, 0x6c, 0xcd, 0xba, 0xd2, 0x74, 0x45,
-	0xc6, 0x4c, 0x6c, 0xbb, 0x12, 0x8e, 0xff, 0xe6, 0xa1, 0x03, 0x7a, 0x9c, 0xf0, 0x94, 0xc9, 0x30,
-	0x8e, 0x54, 0x9d, 0xfc, 0xa7, 0x45, 0xfb, 0xac, 0x12, 0xdd, 0x5b, 0xf0, 0x12, 0x74, 0x19, 0xee,
-	0xb8, 0x90, 0x6c, 0x97, 0xe4, 0xbd, 0xf6, 0x20, 0x3b, 0xd4, 0xfa, 0x25, 0xe4, 0x91, 0x54, 0xd5,
-	0x74, 0x9a, 0x6f, 0xbd, 0x2f, 0x02, 0x27, 0x07, 0x17, 0x84, 0x6d, 0xc0, 0xc5, 0xdd, 0xc8, 0xf3,
-	0xa7, 0xcb, 0x7b, 0x7f, 0x35, 0x1b, 0xba, 0xa3, 0xc9, 0xcc, 0x1d, 0x1a, 0xff, 0xf0, 0x1c, 0x8c,
-	0x92, 0x53, 0xf7, 0x71, 0xe5, 0x2e, 0x3d, 0x83, 0xe0, 0x05, 0xb4, 0x4a, 0xba, 0xa0, 0x6e, 0xf6,
-	0xdd, 0x52, 0xd7, 0xa8, 0x1c, 0xd8, 0x0b, 0x5a, 0xc5, 0x16, 0x9c, 0x96, 0x74, 0x30, 0x9f, 0x4e,
-	0x27, 0x9e, 0xa1, 0x1d, 0x64, 0x0c, 0xc6, 0xee, 0xe0, 0x61, 0x31, 0x9f, 0xcc, 0x3c, 0xa3, 0x16,
-	0xd4, 0xd5, 0x03, 0xdf, 0xfc, 0x04, 0x00, 0x00, 0xff, 0xff, 0x86, 0x3f, 0x12, 0x99, 0x02, 0x02,
-	0x00, 0x00,
+	// 731 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x55, 0xcd, 0x6e, 0xda, 0x4a,
+	0x14, 0xbe, 0x06, 0x87, 0xc0, 0x21, 0x80, 0x33, 0x44, 0x89, 0x95, 0xdc, 0xab, 0x4b, 0x51, 0x2b,
+	0x21, 0x16, 0x69, 0x9b, 0x2e, 0xbb, 0x22, 0xc4, 0x49, 0x68, 0xcb, 0x8f, 0x0c, 0x4d, 0x96, 0x96,
+	0x4d, 0x06, 0xec, 0x16, 0x3c, 0x53, 0x7b, 0x48, 0xd4, 0x48, 0x5d, 0xf6, 0x69, 0xfa, 0x12, 0x7d,
+	0x8e, 0x3e, 0x4d, 0x35, 0x63, 0x33, 0xce, 0x44, 0xa1, 0xaa, 0x94, 0xc5, 0x39, 0xdf, 0xf7, 0xf9,
+	0xfc, 0xf9, 0x73, 0x00, 0xa0, 0xde, 0x8c, 0x1d, 0xd3, 0x88, 0x30, 0x82, 0x72, 0xd4, 0x3b, 0xac,
+	0x7a, 0x8b, 0xd5, 0x3d, 0x5e, 0x2c, 0x70, 0x82, 0x35, 0x7f, 0xea, 0x50, 0xe4, 0x12, 0x67, 0x19,
+	0xcf, 0xd1, 0x0b, 0xd0, 0xd9, 0x57, 0x8a, 0x4d, 0xad, 0xa1, 0xb5, 0xaa, 0x27, 0xbb, 0xc7, 0xd4,
+	0x3b, 0x5e, 0x73, 0x0e, 0x27, 0x6c, 0x41, 0x23, 0x04, 0xfa, 0x6d, 0x80, 0xef, 0xcc, 0x5c, 0x43,
+	0x6b, 0xe9, 0xb6, 0x88, 0xd1, 0x21, 0x14, 0x63, 0xfc, 0x65, 0x85, 0xc3, 0x29, 0x36, 0xf3, 0x02,
+	0x97, 0x39, 0x7a, 0x06, 0x3b, 0x11, 0x8f, 0x63, 0xe6, 0xf8, 0x6e, 0xec, 0x9b, 0x5b, 0x0d, 0xad,
+	0xb5, 0x63, 0x97, 0x53, 0xec, 0xd2, 0x8d, 0x7d, 0xd4, 0x86, 0xed, 0x34, 0x35, 0xf5, 0x86, 0xd6,
+	0x2a, 0x9f, 0x18, 0xbc, 0xb9, 0x77, 0x1f, 0x3a, 0x38, 0xbc, 0xc5, 0x0b, 0x42, 0xb1, 0xbd, 0x16,
+	0xa0, 0xff, 0x00, 0x62, 0xe6, 0x32, 0x9c, 0x14, 0x2b, 0x34, 0xb4, 0x56, 0xc9, 0x2e, 0x09, 0x44,
+	0x94, 0x7a, 0x09, 0x25, 0x8a, 0x71, 0xe4, 0x04, 0xe1, 0x8c, 0x98, 0xdb, 0xa2, 0x18, 0x92, 0x9b,
+	0x48, 0xc6, 0x2e, 0xf2, 0xb0, 0x17, 0xce, 0x08, 0xea, 0x40, 0x7d, 0xea, 0xe3, 0xe9, 0x67, 0x4a,
+	0x82, 0x90, 0x39, 0x4b, 0x1c, 0xc7, 0xee, 0x1c, 0xc7, 0x66, 0xb1, 0x91, 0x7f, 0x72, 0x0e, 0x94,
+	0x89, 0xfb, 0xa9, 0x16, 0xbd, 0x85, 0x1a, 0x8d, 0x30, 0x75, 0x23, 0x7c, 0xe3, 0xd0, 0x88, 0x90,
+	0x59, 0x6c, 0x96, 0xc4, 0xe3, 0x49, 0x67, 0x85, 0xb2, 0xab, 0xeb, 0x7c, 0x24, 0x94, 0xbc, 0x3f,
+	0x3f, 0xe1, 0xd4, 0x77, 0xc3, 0x39, 0xce, 0xfa, 0x97, 0x37, 0xf5, 0xcf, 0xc4, 0xb2, 0xff, 0x29,
+	0xec, 0xd1, 0x08, 0x3b, 0x69, 0xe1, 0xac, 0xc6, 0xce, 0xa6, 0x1a, 0x34, 0xc2, 0xa3, 0x44, 0x2c,
+	0x6b, 0xfc, 0x0f, 0xe5, 0x29, 0x09, 0x67, 0xc1, 0x3c, 0xb9, 0x6b, 0x45, 0xdc, 0x15, 0x12, 0x48,
+	0x1c, 0x76, 0x1f, 0x0a, 0x49, 0x66, 0x56, 0x05, 0x97, 0x66, 0xcd, 0x29, 0xd4, 0xc4, 0x6d, 0xd3,
+	0xa7, 0xb9, 0x91, 0x9e, 0x43, 0x25, 0xc9, 0x56, 0x91, 0xcb, 0x02, 0x12, 0x0a, 0x47, 0x95, 0x6c,
+	0x15, 0x44, 0x6d, 0xd8, 0xfd, 0x44, 0x82, 0xd0, 0x51, 0xcc, 0x91, 0x13, 0xe6, 0xa8, 0x71, 0xc2,
+	0xce, 0x0c, 0xd2, 0xfc, 0x9e, 0x83, 0x7a, 0xe2, 0x45, 0xbc, 0xf4, 0x70, 0x14, 0xfb, 0x01, 0x15,
+	0x9d, 0x5e, 0x29, 0x96, 0xfd, 0x37, 0xb3, 0xac, 0x22, 0x7b, 0xe8, 0x5e, 0xc5, 0x1f, 0xb9, 0xbf,
+	0xf0, 0xc7, 0x9f, 0xac, 0xad, 0x7a, 0x51, 0x7f, 0xec, 0x45, 0x49, 0xdf, 0xb8, 0xcc, 0x15, 0xbe,
+	0x5f, 0xd3, 0x67, 0x2e, 0x73, 0xd1, 0x6b, 0x28, 0x87, 0xf8, 0x8e, 0xbf, 0x4f, 0x3e, 0xa4, 0xb0,
+	0xf2, 0x53, 0x6f, 0x0b, 0x52, 0x51, 0x3f, 0x9e, 0x37, 0xbf, 0x41, 0x55, 0x1d, 0x94, 0x7f, 0x8d,
+	0x3e, 0x89, 0x59, 0x7a, 0x62, 0x11, 0x73, 0x8c, 0x92, 0x88, 0x89, 0xf5, 0x2a, 0xb6, 0x88, 0xd1,
+	0x11, 0x94, 0x7c, 0xc6, 0xa8, 0x23, 0x88, 0xbc, 0x20, 0x8a, 0x1c, 0x18, 0x71, 0x12, 0x81, 0x1e,
+	0xba, 0x4b, 0x9c, 0x6e, 0x20, 0x62, 0x8e, 0xad, 0x56, 0xc1, 0x4d, 0x3a, 0xb6, 0x88, 0x9b, 0x04,
+	0xaa, 0xaa, 0x9b, 0xf9, 0x0e, 0x0f, 0xac, 0x27, 0xa6, 0x78, 0x72, 0x87, 0xcc, 0x71, 0xfc, 0x63,
+	0x5f, 0xcb, 0x73, 0x1b, 0x0c, 0xba, 0x16, 0xb4, 0x7f, 0x69, 0x50, 0x51, 0xfe, 0x07, 0xa1, 0x7d,
+	0x40, 0xa3, 0xd3, 0xf3, 0x89, 0xd3, 0x1f, 0x5f, 0x38, 0x1f, 0x07, 0x67, 0xd6, 0x79, 0x6f, 0x60,
+	0x9d, 0x19, 0xff, 0xa0, 0x03, 0xa8, 0x4b, 0x7c, 0x64, 0x5b, 0xfc, 0xaf, 0x63, 0x5b, 0x46, 0x0e,
+	0xed, 0x81, 0xa1, 0x10, 0x1c, 0xcd, 0xa3, 0x3a, 0xd4, 0x24, 0xda, 0x1d, 0xf6, 0xfb, 0xbd, 0x89,
+	0xa1, 0x2b, 0x35, 0xba, 0x97, 0x56, 0xf7, 0xfd, 0x68, 0xd8, 0x1b, 0x4c, 0x8c, 0x2d, 0xb4, 0x0b,
+	0x15, 0x49, 0xbc, 0x1b, 0xf6, 0x06, 0x46, 0x01, 0x21, 0xa8, 0x4a, 0xe8, 0x83, 0xd5, 0xb9, 0xb2,
+	0x8c, 0x6d, 0xe5, 0xf9, 0xab, 0x9e, 0x75, 0xdd, 0xbd, 0xec, 0x0c, 0x2e, 0x2c, 0xa3, 0xa8, 0xcc,
+	0x30, 0xb0, 0xae, 0x39, 0x67, 0x94, 0xda, 0x3f, 0x34, 0x30, 0x37, 0xb9, 0x35, 0xab, 0xf5, 0x78,
+	0x51, 0xd9, 0x58, 0x0e, 0xa3, 0xa1, 0x23, 0x38, 0x50, 0x31, 0xc7, 0xb6, 0xc6, 0xa3, 0xe1, 0x60,
+	0xcc, 0x0f, 0x20, 0x57, 0xcd, 0x46, 0xcd, 0xab, 0xe5, 0x2f, 0xac, 0x89, 0x33, 0x9e, 0x74, 0x26,
+	0xd6, 0xc3, 0x1b, 0x70, 0x62, 0x2c, 0x89, 0x2d, 0xaf, 0x20, 0x7e, 0x31, 0xde, 0xfc, 0x0e, 0x00,
+	0x00, 0xff, 0xff, 0x5f, 0xad, 0x0e, 0xf0, 0x53, 0x06, 0x00, 0x00,
 }

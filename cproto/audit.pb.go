@@ -22,8 +22,6 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type AuditMessage struct {
 	// Types that are valid to be assigned to Msg:
-	//	*AuditMessage_RaftCommit
-	//	*AuditMessage_LeaderStatus
 	//	*AuditMessage_PbftCommit
 	//	*AuditMessage_PrimaryStatus
 	//	*AuditMessage_FailureDetected
@@ -62,29 +60,17 @@ type isAuditMessage_Msg interface {
 	isAuditMessage_Msg()
 }
 
-type AuditMessage_RaftCommit struct {
-	RaftCommit *RaftCommitNotification `protobuf:"bytes,1,opt,name=raft_commit,json=raftCommit,proto3,oneof"`
-}
-
-type AuditMessage_LeaderStatus struct {
-	LeaderStatus *LeaderStatus `protobuf:"bytes,2,opt,name=leader_status,json=leaderStatus,proto3,oneof"`
-}
-
 type AuditMessage_PbftCommit struct {
-	PbftCommit *PbftCommitNotification `protobuf:"bytes,3,opt,name=pbft_commit,json=pbftCommit,proto3,oneof"`
+	PbftCommit *PbftCommitNotification `protobuf:"bytes,1,opt,name=pbft_commit,json=pbftCommit,proto3,oneof"`
 }
 
 type AuditMessage_PrimaryStatus struct {
-	PrimaryStatus *PrimaryStatus `protobuf:"bytes,4,opt,name=primary_status,json=primaryStatus,proto3,oneof"`
+	PrimaryStatus *PrimaryStatus `protobuf:"bytes,2,opt,name=primary_status,json=primaryStatus,proto3,oneof"`
 }
 
 type AuditMessage_FailureDetected struct {
-	FailureDetected *FailureDetected `protobuf:"bytes,5,opt,name=failure_detected,json=failureDetected,proto3,oneof"`
+	FailureDetected *FailureDetected `protobuf:"bytes,3,opt,name=failure_detected,json=failureDetected,proto3,oneof"`
 }
-
-func (*AuditMessage_RaftCommit) isAuditMessage_Msg() {}
-
-func (*AuditMessage_LeaderStatus) isAuditMessage_Msg() {}
 
 func (*AuditMessage_PbftCommit) isAuditMessage_Msg() {}
 
@@ -95,20 +81,6 @@ func (*AuditMessage_FailureDetected) isAuditMessage_Msg() {}
 func (m *AuditMessage) GetMsg() isAuditMessage_Msg {
 	if m != nil {
 		return m.Msg
-	}
-	return nil
-}
-
-func (m *AuditMessage) GetRaftCommit() *RaftCommitNotification {
-	if x, ok := m.GetMsg().(*AuditMessage_RaftCommit); ok {
-		return x.RaftCommit
-	}
-	return nil
-}
-
-func (m *AuditMessage) GetLeaderStatus() *LeaderStatus {
-	if x, ok := m.GetMsg().(*AuditMessage_LeaderStatus); ok {
-		return x.LeaderStatus
 	}
 	return nil
 }
@@ -137,8 +109,6 @@ func (m *AuditMessage) GetFailureDetected() *FailureDetected {
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*AuditMessage) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
 	return _AuditMessage_OneofMarshaler, _AuditMessage_OneofUnmarshaler, _AuditMessage_OneofSizer, []interface{}{
-		(*AuditMessage_RaftCommit)(nil),
-		(*AuditMessage_LeaderStatus)(nil),
 		(*AuditMessage_PbftCommit)(nil),
 		(*AuditMessage_PrimaryStatus)(nil),
 		(*AuditMessage_FailureDetected)(nil),
@@ -149,28 +119,18 @@ func _AuditMessage_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	m := msg.(*AuditMessage)
 	// msg
 	switch x := m.Msg.(type) {
-	case *AuditMessage_RaftCommit:
-		b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.RaftCommit); err != nil {
-			return err
-		}
-	case *AuditMessage_LeaderStatus:
-		b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.LeaderStatus); err != nil {
-			return err
-		}
 	case *AuditMessage_PbftCommit:
-		b.EncodeVarint(3<<3 | proto.WireBytes)
+		b.EncodeVarint(1<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.PbftCommit); err != nil {
 			return err
 		}
 	case *AuditMessage_PrimaryStatus:
-		b.EncodeVarint(4<<3 | proto.WireBytes)
+		b.EncodeVarint(2<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.PrimaryStatus); err != nil {
 			return err
 		}
 	case *AuditMessage_FailureDetected:
-		b.EncodeVarint(5<<3 | proto.WireBytes)
+		b.EncodeVarint(3<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.FailureDetected); err != nil {
 			return err
 		}
@@ -184,23 +144,7 @@ func _AuditMessage_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 func _AuditMessage_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
 	m := msg.(*AuditMessage)
 	switch tag {
-	case 1: // msg.raft_commit
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(RaftCommitNotification)
-		err := b.DecodeMessage(msg)
-		m.Msg = &AuditMessage_RaftCommit{msg}
-		return true, err
-	case 2: // msg.leader_status
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(LeaderStatus)
-		err := b.DecodeMessage(msg)
-		m.Msg = &AuditMessage_LeaderStatus{msg}
-		return true, err
-	case 3: // msg.pbft_commit
+	case 1: // msg.pbft_commit
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -208,7 +152,7 @@ func _AuditMessage_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.B
 		err := b.DecodeMessage(msg)
 		m.Msg = &AuditMessage_PbftCommit{msg}
 		return true, err
-	case 4: // msg.primary_status
+	case 2: // msg.primary_status
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -216,7 +160,7 @@ func _AuditMessage_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.B
 		err := b.DecodeMessage(msg)
 		m.Msg = &AuditMessage_PrimaryStatus{msg}
 		return true, err
-	case 5: // msg.failure_detected
+	case 3: // msg.failure_detected
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -233,16 +177,6 @@ func _AuditMessage_OneofSizer(msg proto.Message) (n int) {
 	m := msg.(*AuditMessage)
 	// msg
 	switch x := m.Msg.(type) {
-	case *AuditMessage_RaftCommit:
-		s := proto.Size(x.RaftCommit)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *AuditMessage_LeaderStatus:
-		s := proto.Size(x.LeaderStatus)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
 	case *AuditMessage_PbftCommit:
 		s := proto.Size(x.PbftCommit)
 		n += 1 // tag and wire
@@ -328,61 +262,6 @@ func (m *LeaderStatus) GetCurrentCommitIndex() uint64 {
 	return 0
 }
 
-type RaftCommitNotification struct {
-	SenderUuid           string   `protobuf:"bytes,1,opt,name=sender_uuid,json=senderUuid,proto3" json:"sender_uuid,omitempty"`
-	LogIndex             uint64   `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
-	Operation            string   `protobuf:"bytes,3,opt,name=operation,proto3" json:"operation,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *RaftCommitNotification) Reset()         { *m = RaftCommitNotification{} }
-func (m *RaftCommitNotification) String() string { return proto.CompactTextString(m) }
-func (*RaftCommitNotification) ProtoMessage()    {}
-func (*RaftCommitNotification) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5594839dd8e38a1b, []int{2}
-}
-
-func (m *RaftCommitNotification) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RaftCommitNotification.Unmarshal(m, b)
-}
-func (m *RaftCommitNotification) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RaftCommitNotification.Marshal(b, m, deterministic)
-}
-func (m *RaftCommitNotification) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RaftCommitNotification.Merge(m, src)
-}
-func (m *RaftCommitNotification) XXX_Size() int {
-	return xxx_messageInfo_RaftCommitNotification.Size(m)
-}
-func (m *RaftCommitNotification) XXX_DiscardUnknown() {
-	xxx_messageInfo_RaftCommitNotification.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RaftCommitNotification proto.InternalMessageInfo
-
-func (m *RaftCommitNotification) GetSenderUuid() string {
-	if m != nil {
-		return m.SenderUuid
-	}
-	return ""
-}
-
-func (m *RaftCommitNotification) GetLogIndex() uint64 {
-	if m != nil {
-		return m.LogIndex
-	}
-	return 0
-}
-
-func (m *RaftCommitNotification) GetOperation() string {
-	if m != nil {
-		return m.Operation
-	}
-	return ""
-}
-
 type PrimaryStatus struct {
 	View                 uint64   `protobuf:"varint,1,opt,name=view,proto3" json:"view,omitempty"`
 	Primary              string   `protobuf:"bytes,2,opt,name=primary,proto3" json:"primary,omitempty"`
@@ -395,7 +274,7 @@ func (m *PrimaryStatus) Reset()         { *m = PrimaryStatus{} }
 func (m *PrimaryStatus) String() string { return proto.CompactTextString(m) }
 func (*PrimaryStatus) ProtoMessage()    {}
 func (*PrimaryStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5594839dd8e38a1b, []int{3}
+	return fileDescriptor_5594839dd8e38a1b, []int{2}
 }
 
 func (m *PrimaryStatus) XXX_Unmarshal(b []byte) error {
@@ -433,7 +312,7 @@ func (m *PrimaryStatus) GetPrimary() string {
 type PbftCommitNotification struct {
 	SenderUuid           string   `protobuf:"bytes,1,opt,name=sender_uuid,json=senderUuid,proto3" json:"sender_uuid,omitempty"`
 	SequenceNumber       uint64   `protobuf:"varint,2,opt,name=sequence_number,json=sequenceNumber,proto3" json:"sequence_number,omitempty"`
-	Operation            string   `protobuf:"bytes,3,opt,name=operation,proto3" json:"operation,omitempty"`
+	Operation            []byte   `protobuf:"bytes,3,opt,name=operation,proto3" json:"operation,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -443,7 +322,7 @@ func (m *PbftCommitNotification) Reset()         { *m = PbftCommitNotification{}
 func (m *PbftCommitNotification) String() string { return proto.CompactTextString(m) }
 func (*PbftCommitNotification) ProtoMessage()    {}
 func (*PbftCommitNotification) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5594839dd8e38a1b, []int{4}
+	return fileDescriptor_5594839dd8e38a1b, []int{3}
 }
 
 func (m *PbftCommitNotification) XXX_Unmarshal(b []byte) error {
@@ -478,11 +357,11 @@ func (m *PbftCommitNotification) GetSequenceNumber() uint64 {
 	return 0
 }
 
-func (m *PbftCommitNotification) GetOperation() string {
+func (m *PbftCommitNotification) GetOperation() []byte {
 	if m != nil {
 		return m.Operation
 	}
-	return ""
+	return nil
 }
 
 type FailureDetected struct {
@@ -496,7 +375,7 @@ func (m *FailureDetected) Reset()         { *m = FailureDetected{} }
 func (m *FailureDetected) String() string { return proto.CompactTextString(m) }
 func (*FailureDetected) ProtoMessage()    {}
 func (*FailureDetected) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5594839dd8e38a1b, []int{5}
+	return fileDescriptor_5594839dd8e38a1b, []int{4}
 }
 
 func (m *FailureDetected) XXX_Unmarshal(b []byte) error {
@@ -527,7 +406,6 @@ func (m *FailureDetected) GetSenderUuid() string {
 func init() {
 	proto.RegisterType((*AuditMessage)(nil), "pb.audit_message")
 	proto.RegisterType((*LeaderStatus)(nil), "pb.leader_status")
-	proto.RegisterType((*RaftCommitNotification)(nil), "pb.raft_commit_notification")
 	proto.RegisterType((*PrimaryStatus)(nil), "pb.primary_status")
 	proto.RegisterType((*PbftCommitNotification)(nil), "pb.pbft_commit_notification")
 	proto.RegisterType((*FailureDetected)(nil), "pb.failure_detected")
@@ -536,32 +414,29 @@ func init() {
 func init() { proto.RegisterFile("audit.proto", fileDescriptor_5594839dd8e38a1b) }
 
 var fileDescriptor_5594839dd8e38a1b = []byte{
-	// 423 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x93, 0xdf, 0x8a, 0xd4, 0x30,
-	0x14, 0xc6, 0x67, 0x66, 0xbb, 0xab, 0x3d, 0x75, 0x76, 0xdc, 0xb0, 0x48, 0xc1, 0x05, 0xa5, 0x37,
-	0x8a, 0x17, 0x83, 0xb8, 0x37, 0x82, 0xa0, 0xf8, 0xe7, 0xa2, 0x82, 0x78, 0x11, 0xf1, 0x3a, 0xa4,
-	0xed, 0x99, 0x12, 0x68, 0x9b, 0x9a, 0x26, 0xab, 0xde, 0xfa, 0x16, 0xbe, 0x96, 0x4f, 0x24, 0x39,
-	0x4d, 0xe9, 0xee, 0x2c, 0xcb, 0xdc, 0x25, 0xbf, 0xef, 0xe4, 0x7c, 0xa7, 0x5f, 0x52, 0x48, 0xa4,
-	0xab, 0x94, 0xdd, 0xf6, 0x46, 0x5b, 0xcd, 0x56, 0x7d, 0x91, 0xfd, 0x5b, 0xc1, 0x9a, 0x98, 0x68,
-	0x71, 0x18, 0x64, 0x8d, 0xec, 0x1d, 0x24, 0x46, 0xee, 0xac, 0x28, 0x75, 0xdb, 0x2a, 0x9b, 0x2e,
-	0x9f, 0x2e, 0x9f, 0x27, 0xaf, 0x2e, 0xb6, 0x7d, 0xb1, 0xbd, 0x86, 0x45, 0xa7, 0xad, 0xda, 0xa9,
-	0x52, 0x5a, 0xa5, 0xbb, 0x7c, 0xc1, 0xc1, 0x6b, 0x1f, 0x49, 0x62, 0xaf, 0x61, 0xdd, 0xa0, 0xac,
-	0xd0, 0x88, 0xc1, 0x4a, 0xeb, 0x86, 0x74, 0x45, 0x2d, 0xce, 0x7c, 0x8b, 0x1b, 0x42, 0xbe, 0xe0,
-	0x0f, 0x46, 0xf0, 0x8d, 0xf6, 0xde, 0xba, 0x2f, 0x66, 0xeb, 0xa3, 0xd9, 0xfa, 0x1a, 0xbe, 0x65,
-	0xed, 0xb5, 0x60, 0xfd, 0x06, 0x4e, 0x7b, 0xa3, 0x5a, 0x69, 0x7e, 0x4f, 0xde, 0x11, 0xf5, 0x60,
-	0xd4, 0xe3, 0x86, 0x92, 0x2f, 0xf8, 0x3a, 0x90, 0xe0, 0xfe, 0x1e, 0x1e, 0xee, 0xa4, 0x6a, 0x9c,
-	0x41, 0x51, 0xa1, 0xc5, 0xd2, 0x62, 0x95, 0x1e, 0xd3, 0xf1, 0x73, 0x7f, 0x7c, 0x5f, 0xcb, 0x17,
-	0x7c, 0x13, 0xd8, 0xa7, 0x80, 0x3e, 0x1c, 0xc3, 0x51, 0x3b, 0xd4, 0xd9, 0xdf, 0xe5, 0x5e, 0x04,
-	0x8c, 0x41, 0x64, 0xd1, 0xb4, 0x94, 0x66, 0xc4, 0x69, 0xcd, 0x1e, 0xc1, 0xc9, 0x58, 0x44, 0x01,
-	0xc5, 0x3c, 0xec, 0xd8, 0x0b, 0x38, 0x2b, 0x9d, 0x31, 0xd8, 0x59, 0xd1, 0xe8, 0x5a, 0xa8, 0xae,
-	0xc2, 0x5f, 0x94, 0x45, 0xc4, 0x37, 0x41, 0xf8, 0xa2, 0xeb, 0xcf, 0x1e, 0xb3, 0x97, 0x70, 0x3e,
-	0xd5, 0x86, 0x74, 0xc6, 0xf2, 0x88, 0xca, 0x59, 0xd0, 0xc6, 0x74, 0xe8, 0x44, 0x76, 0x05, 0xe9,
-	0x5d, 0xf7, 0xc8, 0x9e, 0x40, 0x32, 0x60, 0xe7, 0xc7, 0x76, 0x4e, 0x55, 0x34, 0x6c, 0xcc, 0x61,
-	0x44, 0xdf, 0x9d, 0xaa, 0xd8, 0x63, 0x88, 0xe7, 0x91, 0x56, 0xe4, 0x71, 0xbf, 0x99, 0x66, 0xb9,
-	0x80, 0x58, 0xf7, 0x68, 0xa8, 0x15, 0xcd, 0x1b, 0xf3, 0x19, 0x64, 0x6f, 0xf7, 0xaf, 0xc6, 0x67,
-	0x72, 0xa5, 0xf0, 0xe7, 0x94, 0x89, 0x5f, 0xb3, 0x14, 0xee, 0x85, 0xaa, 0x10, 0xca, 0xb4, 0xcd,
-	0xfe, 0x2c, 0x21, 0xbd, 0xeb, 0x15, 0x1c, 0x1e, 0xfc, 0x19, 0x6c, 0x06, 0xfc, 0xe1, 0xb0, 0x2b,
-	0x51, 0x74, 0xae, 0x2d, 0x42, 0xe8, 0x11, 0x3f, 0x9d, 0xf0, 0x57, 0xa2, 0x07, 0x3e, 0xe2, 0xf2,
-	0xf6, 0x13, 0x39, 0xe8, 0x5d, 0x9c, 0xd0, 0xdf, 0x76, 0xf9, 0x3f, 0x00, 0x00, 0xff, 0xff, 0xa3,
-	0x7c, 0x4d, 0x3e, 0x7c, 0x03, 0x00, 0x00,
+	// 369 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0x4d, 0x4f, 0xe3, 0x30,
+	0x10, 0x86, 0x9b, 0x36, 0xdb, 0x55, 0x27, 0xdb, 0x76, 0xd7, 0xaa, 0x56, 0x39, 0x54, 0xda, 0x55,
+	0x2e, 0x20, 0x0e, 0x15, 0xa2, 0x47, 0x24, 0x10, 0x1f, 0x87, 0x22, 0x21, 0x0e, 0x46, 0x9c, 0xad,
+	0x7c, 0x4c, 0x23, 0x4b, 0x4d, 0x1c, 0x1c, 0x9b, 0x8f, 0x2b, 0xff, 0x82, 0x5f, 0xc6, 0xdf, 0x41,
+	0x99, 0x38, 0x02, 0x8a, 0x10, 0xb7, 0xf8, 0x79, 0xdf, 0x19, 0xbf, 0x33, 0x0e, 0x04, 0xb1, 0xcd,
+	0xa4, 0x59, 0x54, 0x5a, 0x19, 0xc5, 0xfa, 0x55, 0x12, 0xbd, 0x78, 0x30, 0x26, 0x26, 0x0a, 0xac,
+	0xeb, 0x38, 0x47, 0x76, 0x0c, 0x41, 0x95, 0xac, 0x8d, 0x48, 0x55, 0x51, 0x48, 0x13, 0x7a, 0xff,
+	0xbd, 0xdd, 0xe0, 0x60, 0xbe, 0xa8, 0x92, 0xc5, 0x3b, 0x2c, 0x4a, 0x65, 0xe4, 0x5a, 0xa6, 0xb1,
+	0x91, 0xaa, 0x5c, 0xf5, 0x38, 0x34, 0xda, 0x19, 0x49, 0xec, 0x10, 0x26, 0x95, 0x96, 0x45, 0xac,
+	0x1f, 0x45, 0x6d, 0x62, 0x63, 0xeb, 0xb0, 0x4f, 0x3d, 0x18, 0xf5, 0xf8, 0xa0, 0xac, 0x7a, 0x7c,
+	0xec, 0xc8, 0x35, 0x01, 0x76, 0x02, 0xbf, 0xd7, 0xb1, 0xdc, 0x58, 0x8d, 0x22, 0x43, 0x83, 0xa9,
+	0xc1, 0x2c, 0x1c, 0x50, 0xf9, 0xac, 0x29, 0xdf, 0xd6, 0x56, 0x3d, 0x3e, 0x75, 0xec, 0xdc, 0xa1,
+	0xd3, 0x1f, 0x30, 0x28, 0xea, 0x3c, 0x7a, 0xf6, 0x60, 0xbc, 0xc1, 0x38, 0x43, 0xed, 0x2e, 0x63,
+	0x0c, 0x7c, 0x83, 0xba, 0xa0, 0x91, 0x7c, 0x4e, 0xdf, 0xec, 0x2f, 0x0c, 0x5b, 0x13, 0x85, 0x1c,
+	0x71, 0x77, 0x62, 0x7b, 0xf0, 0x27, 0xb5, 0x5a, 0x63, 0x69, 0xc4, 0x46, 0xe5, 0x42, 0x96, 0x19,
+	0x3e, 0x50, 0x10, 0x9f, 0x4f, 0x9d, 0x70, 0xa9, 0xf2, 0x8b, 0x06, 0xb3, 0x7d, 0x98, 0x75, 0x5e,
+	0xb7, 0x9d, 0xd6, 0xee, 0x93, 0x9d, 0x39, 0xad, 0xdd, 0x0e, 0x55, 0x44, 0x47, 0xdb, 0x2b, 0x6a,
+	0xb2, 0xdd, 0x49, 0xbc, 0xef, 0xb2, 0x35, 0xdf, 0x2c, 0x84, 0x9f, 0xce, 0xe5, 0xc2, 0x75, 0xc7,
+	0xe8, 0xc9, 0x83, 0xf0, 0xab, 0xd7, 0x60, 0xff, 0x20, 0xa8, 0xb1, 0x6c, 0xe6, 0xb6, 0x56, 0x66,
+	0xd4, 0x71, 0xc4, 0xa1, 0x45, 0x37, 0x56, 0x66, 0x6c, 0x07, 0xa6, 0x35, 0xde, 0x5a, 0x2c, 0x53,
+	0x14, 0xa5, 0x2d, 0x12, 0x37, 0xbc, 0xcf, 0x27, 0x1d, 0xbe, 0x22, 0xca, 0xe6, 0x30, 0x52, 0x15,
+	0x6a, 0x6a, 0x4b, 0xc3, 0xff, 0xe2, 0x6f, 0x20, 0x5a, 0x7e, 0x7e, 0xaa, 0x6f, 0xef, 0x4e, 0x86,
+	0xf4, 0xeb, 0x2d, 0x5f, 0x03, 0x00, 0x00, 0xff, 0xff, 0x51, 0x59, 0x9d, 0x0e, 0x89, 0x02, 0x00,
+	0x00,
 }

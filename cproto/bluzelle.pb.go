@@ -20,232 +20,364 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type BznMsgType int32
-
-const (
-	BznMsgType_BZN_MSG_UNDEFINED BznMsgType = 0
-	BznMsgType_BZN_MSG_PBFT      BznMsgType = 1
-)
-
-var BznMsgType_name = map[int32]string{
-	0: "BZN_MSG_UNDEFINED",
-	1: "BZN_MSG_PBFT",
+type BznEnvelope struct {
+	Sender    string `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
+	Signature []byte `protobuf:"bytes,2,opt,name=signature,proto3" json:"signature,omitempty"`
+	Timestamp uint64 `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// Types that are valid to be assigned to Payload:
+	//	*BznEnvelope_DatabaseMsg
+	//	*BznEnvelope_PbftInternalRequest
+	//	*BznEnvelope_DatabaseResponse
+	//	*BznEnvelope_Json
+	//	*BznEnvelope_Audit
+	//	*BznEnvelope_Pbft
+	//	*BznEnvelope_PbftMembership
+	//	*BznEnvelope_StatusRequest
+	//	*BznEnvelope_StatusResponse
+	Payload              isBznEnvelope_Payload `protobuf_oneof:"payload"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
 }
 
-var BznMsgType_value = map[string]int32{
-	"BZN_MSG_UNDEFINED": 0,
-	"BZN_MSG_PBFT":      1,
-}
-
-func (x BznMsgType) String() string {
-	return proto.EnumName(BznMsgType_name, int32(x))
-}
-
-func (BznMsgType) EnumDescriptor() ([]byte, []int) {
+func (m *BznEnvelope) Reset()         { *m = BznEnvelope{} }
+func (m *BznEnvelope) String() string { return proto.CompactTextString(m) }
+func (*BznEnvelope) ProtoMessage()    {}
+func (*BznEnvelope) Descriptor() ([]byte, []int) {
 	return fileDescriptor_37e4e006cca7cf40, []int{0}
 }
 
-type BznMsg struct {
-	// Types that are valid to be assigned to Msg:
-	//	*BznMsg_Db
-	//	*BznMsg_Json
-	//	*BznMsg_AuditMessage
-	//	*BznMsg_Pbft
-	Msg                  isBznMsg_Msg `protobuf_oneof:"msg"`
-	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
-	XXX_unrecognized     []byte       `json:"-"`
-	XXX_sizecache        int32        `json:"-"`
+func (m *BznEnvelope) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_BznEnvelope.Unmarshal(m, b)
+}
+func (m *BznEnvelope) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_BznEnvelope.Marshal(b, m, deterministic)
+}
+func (m *BznEnvelope) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BznEnvelope.Merge(m, src)
+}
+func (m *BznEnvelope) XXX_Size() int {
+	return xxx_messageInfo_BznEnvelope.Size(m)
+}
+func (m *BznEnvelope) XXX_DiscardUnknown() {
+	xxx_messageInfo_BznEnvelope.DiscardUnknown(m)
 }
 
-func (m *BznMsg) Reset()         { *m = BznMsg{} }
-func (m *BznMsg) String() string { return proto.CompactTextString(m) }
-func (*BznMsg) ProtoMessage()    {}
-func (*BznMsg) Descriptor() ([]byte, []int) {
-	return fileDescriptor_37e4e006cca7cf40, []int{0}
-}
+var xxx_messageInfo_BznEnvelope proto.InternalMessageInfo
 
-func (m *BznMsg) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_BznMsg.Unmarshal(m, b)
-}
-func (m *BznMsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_BznMsg.Marshal(b, m, deterministic)
-}
-func (m *BznMsg) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BznMsg.Merge(m, src)
-}
-func (m *BznMsg) XXX_Size() int {
-	return xxx_messageInfo_BznMsg.Size(m)
-}
-func (m *BznMsg) XXX_DiscardUnknown() {
-	xxx_messageInfo_BznMsg.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_BznMsg proto.InternalMessageInfo
-
-type isBznMsg_Msg interface {
-	isBznMsg_Msg()
-}
-
-type BznMsg_Db struct {
-	Db *DatabaseMsg `protobuf:"bytes,10,opt,name=db,proto3,oneof"`
-}
-
-type BznMsg_Json struct {
-	Json string `protobuf:"bytes,11,opt,name=json,proto3,oneof"`
-}
-
-type BznMsg_AuditMessage struct {
-	AuditMessage *AuditMessage `protobuf:"bytes,12,opt,name=audit_message,json=auditMessage,proto3,oneof"`
-}
-
-type BznMsg_Pbft struct {
-	Pbft *PbftMsg `protobuf:"bytes,13,opt,name=pbft,proto3,oneof"`
-}
-
-func (*BznMsg_Db) isBznMsg_Msg() {}
-
-func (*BznMsg_Json) isBznMsg_Msg() {}
-
-func (*BznMsg_AuditMessage) isBznMsg_Msg() {}
-
-func (*BznMsg_Pbft) isBznMsg_Msg() {}
-
-func (m *BznMsg) GetMsg() isBznMsg_Msg {
+func (m *BznEnvelope) GetSender() string {
 	if m != nil {
-		return m.Msg
-	}
-	return nil
-}
-
-func (m *BznMsg) GetDb() *DatabaseMsg {
-	if x, ok := m.GetMsg().(*BznMsg_Db); ok {
-		return x.Db
-	}
-	return nil
-}
-
-func (m *BznMsg) GetJson() string {
-	if x, ok := m.GetMsg().(*BznMsg_Json); ok {
-		return x.Json
+		return m.Sender
 	}
 	return ""
 }
 
-func (m *BznMsg) GetAuditMessage() *AuditMessage {
-	if x, ok := m.GetMsg().(*BznMsg_AuditMessage); ok {
-		return x.AuditMessage
+func (m *BznEnvelope) GetSignature() []byte {
+	if m != nil {
+		return m.Signature
 	}
 	return nil
 }
 
-func (m *BznMsg) GetPbft() *PbftMsg {
-	if x, ok := m.GetMsg().(*BznMsg_Pbft); ok {
+func (m *BznEnvelope) GetTimestamp() uint64 {
+	if m != nil {
+		return m.Timestamp
+	}
+	return 0
+}
+
+type isBznEnvelope_Payload interface {
+	isBznEnvelope_Payload()
+}
+
+type BznEnvelope_DatabaseMsg struct {
+	DatabaseMsg []byte `protobuf:"bytes,10,opt,name=database_msg,json=databaseMsg,proto3,oneof"`
+}
+
+type BznEnvelope_PbftInternalRequest struct {
+	PbftInternalRequest []byte `protobuf:"bytes,11,opt,name=pbft_internal_request,json=pbftInternalRequest,proto3,oneof"`
+}
+
+type BznEnvelope_DatabaseResponse struct {
+	DatabaseResponse []byte `protobuf:"bytes,12,opt,name=database_response,json=databaseResponse,proto3,oneof"`
+}
+
+type BznEnvelope_Json struct {
+	Json []byte `protobuf:"bytes,13,opt,name=json,proto3,oneof"`
+}
+
+type BznEnvelope_Audit struct {
+	Audit []byte `protobuf:"bytes,14,opt,name=audit,proto3,oneof"`
+}
+
+type BznEnvelope_Pbft struct {
+	Pbft []byte `protobuf:"bytes,15,opt,name=pbft,proto3,oneof"`
+}
+
+type BznEnvelope_PbftMembership struct {
+	PbftMembership []byte `protobuf:"bytes,16,opt,name=pbft_membership,json=pbftMembership,proto3,oneof"`
+}
+
+type BznEnvelope_StatusRequest struct {
+	StatusRequest []byte `protobuf:"bytes,17,opt,name=status_request,json=statusRequest,proto3,oneof"`
+}
+
+type BznEnvelope_StatusResponse struct {
+	StatusResponse []byte `protobuf:"bytes,18,opt,name=status_response,json=statusResponse,proto3,oneof"`
+}
+
+func (*BznEnvelope_DatabaseMsg) isBznEnvelope_Payload() {}
+
+func (*BznEnvelope_PbftInternalRequest) isBznEnvelope_Payload() {}
+
+func (*BznEnvelope_DatabaseResponse) isBznEnvelope_Payload() {}
+
+func (*BznEnvelope_Json) isBznEnvelope_Payload() {}
+
+func (*BznEnvelope_Audit) isBznEnvelope_Payload() {}
+
+func (*BznEnvelope_Pbft) isBznEnvelope_Payload() {}
+
+func (*BznEnvelope_PbftMembership) isBznEnvelope_Payload() {}
+
+func (*BznEnvelope_StatusRequest) isBznEnvelope_Payload() {}
+
+func (*BznEnvelope_StatusResponse) isBznEnvelope_Payload() {}
+
+func (m *BznEnvelope) GetPayload() isBznEnvelope_Payload {
+	if m != nil {
+		return m.Payload
+	}
+	return nil
+}
+
+func (m *BznEnvelope) GetDatabaseMsg() []byte {
+	if x, ok := m.GetPayload().(*BznEnvelope_DatabaseMsg); ok {
+		return x.DatabaseMsg
+	}
+	return nil
+}
+
+func (m *BznEnvelope) GetPbftInternalRequest() []byte {
+	if x, ok := m.GetPayload().(*BznEnvelope_PbftInternalRequest); ok {
+		return x.PbftInternalRequest
+	}
+	return nil
+}
+
+func (m *BznEnvelope) GetDatabaseResponse() []byte {
+	if x, ok := m.GetPayload().(*BznEnvelope_DatabaseResponse); ok {
+		return x.DatabaseResponse
+	}
+	return nil
+}
+
+func (m *BznEnvelope) GetJson() []byte {
+	if x, ok := m.GetPayload().(*BznEnvelope_Json); ok {
+		return x.Json
+	}
+	return nil
+}
+
+func (m *BznEnvelope) GetAudit() []byte {
+	if x, ok := m.GetPayload().(*BznEnvelope_Audit); ok {
+		return x.Audit
+	}
+	return nil
+}
+
+func (m *BznEnvelope) GetPbft() []byte {
+	if x, ok := m.GetPayload().(*BznEnvelope_Pbft); ok {
 		return x.Pbft
 	}
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*BznMsg) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _BznMsg_OneofMarshaler, _BznMsg_OneofUnmarshaler, _BznMsg_OneofSizer, []interface{}{
-		(*BznMsg_Db)(nil),
-		(*BznMsg_Json)(nil),
-		(*BznMsg_AuditMessage)(nil),
-		(*BznMsg_Pbft)(nil),
-	}
-}
-
-func _BznMsg_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*BznMsg)
-	// msg
-	switch x := m.Msg.(type) {
-	case *BznMsg_Db:
-		b.EncodeVarint(10<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Db); err != nil {
-			return err
-		}
-	case *BznMsg_Json:
-		b.EncodeVarint(11<<3 | proto.WireBytes)
-		b.EncodeStringBytes(x.Json)
-	case *BznMsg_AuditMessage:
-		b.EncodeVarint(12<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.AuditMessage); err != nil {
-			return err
-		}
-	case *BznMsg_Pbft:
-		b.EncodeVarint(13<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Pbft); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("BznMsg.Msg has unexpected type %T", x)
+func (m *BznEnvelope) GetPbftMembership() []byte {
+	if x, ok := m.GetPayload().(*BznEnvelope_PbftMembership); ok {
+		return x.PbftMembership
 	}
 	return nil
 }
 
-func _BznMsg_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*BznMsg)
+func (m *BznEnvelope) GetStatusRequest() []byte {
+	if x, ok := m.GetPayload().(*BznEnvelope_StatusRequest); ok {
+		return x.StatusRequest
+	}
+	return nil
+}
+
+func (m *BznEnvelope) GetStatusResponse() []byte {
+	if x, ok := m.GetPayload().(*BznEnvelope_StatusResponse); ok {
+		return x.StatusResponse
+	}
+	return nil
+}
+
+// XXX_OneofFuncs is for the internal use of the proto package.
+func (*BznEnvelope) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _BznEnvelope_OneofMarshaler, _BznEnvelope_OneofUnmarshaler, _BznEnvelope_OneofSizer, []interface{}{
+		(*BznEnvelope_DatabaseMsg)(nil),
+		(*BznEnvelope_PbftInternalRequest)(nil),
+		(*BznEnvelope_DatabaseResponse)(nil),
+		(*BznEnvelope_Json)(nil),
+		(*BznEnvelope_Audit)(nil),
+		(*BznEnvelope_Pbft)(nil),
+		(*BznEnvelope_PbftMembership)(nil),
+		(*BznEnvelope_StatusRequest)(nil),
+		(*BznEnvelope_StatusResponse)(nil),
+	}
+}
+
+func _BznEnvelope_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
+	m := msg.(*BznEnvelope)
+	// payload
+	switch x := m.Payload.(type) {
+	case *BznEnvelope_DatabaseMsg:
+		b.EncodeVarint(10<<3 | proto.WireBytes)
+		b.EncodeRawBytes(x.DatabaseMsg)
+	case *BznEnvelope_PbftInternalRequest:
+		b.EncodeVarint(11<<3 | proto.WireBytes)
+		b.EncodeRawBytes(x.PbftInternalRequest)
+	case *BznEnvelope_DatabaseResponse:
+		b.EncodeVarint(12<<3 | proto.WireBytes)
+		b.EncodeRawBytes(x.DatabaseResponse)
+	case *BznEnvelope_Json:
+		b.EncodeVarint(13<<3 | proto.WireBytes)
+		b.EncodeRawBytes(x.Json)
+	case *BznEnvelope_Audit:
+		b.EncodeVarint(14<<3 | proto.WireBytes)
+		b.EncodeRawBytes(x.Audit)
+	case *BznEnvelope_Pbft:
+		b.EncodeVarint(15<<3 | proto.WireBytes)
+		b.EncodeRawBytes(x.Pbft)
+	case *BznEnvelope_PbftMembership:
+		b.EncodeVarint(16<<3 | proto.WireBytes)
+		b.EncodeRawBytes(x.PbftMembership)
+	case *BznEnvelope_StatusRequest:
+		b.EncodeVarint(17<<3 | proto.WireBytes)
+		b.EncodeRawBytes(x.StatusRequest)
+	case *BznEnvelope_StatusResponse:
+		b.EncodeVarint(18<<3 | proto.WireBytes)
+		b.EncodeRawBytes(x.StatusResponse)
+	case nil:
+	default:
+		return fmt.Errorf("BznEnvelope.Payload has unexpected type %T", x)
+	}
+	return nil
+}
+
+func _BznEnvelope_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
+	m := msg.(*BznEnvelope)
 	switch tag {
-	case 10: // msg.db
+	case 10: // payload.database_msg
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(DatabaseMsg)
-		err := b.DecodeMessage(msg)
-		m.Msg = &BznMsg_Db{msg}
+		x, err := b.DecodeRawBytes(true)
+		m.Payload = &BznEnvelope_DatabaseMsg{x}
 		return true, err
-	case 11: // msg.json
+	case 11: // payload.pbft_internal_request
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		x, err := b.DecodeStringBytes()
-		m.Msg = &BznMsg_Json{x}
+		x, err := b.DecodeRawBytes(true)
+		m.Payload = &BznEnvelope_PbftInternalRequest{x}
 		return true, err
-	case 12: // msg.audit_message
+	case 12: // payload.database_response
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(AuditMessage)
-		err := b.DecodeMessage(msg)
-		m.Msg = &BznMsg_AuditMessage{msg}
+		x, err := b.DecodeRawBytes(true)
+		m.Payload = &BznEnvelope_DatabaseResponse{x}
 		return true, err
-	case 13: // msg.pbft
+	case 13: // payload.json
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(PbftMsg)
-		err := b.DecodeMessage(msg)
-		m.Msg = &BznMsg_Pbft{msg}
+		x, err := b.DecodeRawBytes(true)
+		m.Payload = &BznEnvelope_Json{x}
+		return true, err
+	case 14: // payload.audit
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeRawBytes(true)
+		m.Payload = &BznEnvelope_Audit{x}
+		return true, err
+	case 15: // payload.pbft
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeRawBytes(true)
+		m.Payload = &BznEnvelope_Pbft{x}
+		return true, err
+	case 16: // payload.pbft_membership
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeRawBytes(true)
+		m.Payload = &BznEnvelope_PbftMembership{x}
+		return true, err
+	case 17: // payload.status_request
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeRawBytes(true)
+		m.Payload = &BznEnvelope_StatusRequest{x}
+		return true, err
+	case 18: // payload.status_response
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		x, err := b.DecodeRawBytes(true)
+		m.Payload = &BznEnvelope_StatusResponse{x}
 		return true, err
 	default:
 		return false, nil
 	}
 }
 
-func _BznMsg_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*BznMsg)
-	// msg
-	switch x := m.Msg.(type) {
-	case *BznMsg_Db:
-		s := proto.Size(x.Db)
+func _BznEnvelope_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*BznEnvelope)
+	// payload
+	switch x := m.Payload.(type) {
+	case *BznEnvelope_DatabaseMsg:
 		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *BznMsg_Json:
+		n += proto.SizeVarint(uint64(len(x.DatabaseMsg)))
+		n += len(x.DatabaseMsg)
+	case *BznEnvelope_PbftInternalRequest:
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(len(x.PbftInternalRequest)))
+		n += len(x.PbftInternalRequest)
+	case *BznEnvelope_DatabaseResponse:
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(len(x.DatabaseResponse)))
+		n += len(x.DatabaseResponse)
+	case *BznEnvelope_Json:
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(len(x.Json)))
 		n += len(x.Json)
-	case *BznMsg_AuditMessage:
-		s := proto.Size(x.AuditMessage)
+	case *BznEnvelope_Audit:
 		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *BznMsg_Pbft:
-		s := proto.Size(x.Pbft)
+		n += proto.SizeVarint(uint64(len(x.Audit)))
+		n += len(x.Audit)
+	case *BznEnvelope_Pbft:
 		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
+		n += proto.SizeVarint(uint64(len(x.Pbft)))
+		n += len(x.Pbft)
+	case *BznEnvelope_PbftMembership:
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(len(x.PbftMembership)))
+		n += len(x.PbftMembership)
+	case *BznEnvelope_StatusRequest:
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(len(x.StatusRequest)))
+		n += len(x.StatusRequest)
+	case *BznEnvelope_StatusResponse:
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(len(x.StatusResponse)))
+		n += len(x.StatusResponse)
 	case nil:
 	default:
 		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
@@ -253,80 +385,31 @@ func _BznMsg_OneofSizer(msg proto.Message) (n int) {
 	return n
 }
 
-type WrappedBznMsg struct {
-	// This is stored as a serialized string because we need to sign it, and serialization is not guarenteed to be deterministic
-	Payload              []byte     `protobuf:"bytes,1,opt,name=payload,proto3" json:"payload,omitempty"`
-	Type                 BznMsgType `protobuf:"varint,2,opt,name=type,proto3,enum=pb.BznMsgType" json:"type,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
-	XXX_unrecognized     []byte     `json:"-"`
-	XXX_sizecache        int32      `json:"-"`
-}
-
-func (m *WrappedBznMsg) Reset()         { *m = WrappedBznMsg{} }
-func (m *WrappedBznMsg) String() string { return proto.CompactTextString(m) }
-func (*WrappedBznMsg) ProtoMessage()    {}
-func (*WrappedBznMsg) Descriptor() ([]byte, []int) {
-	return fileDescriptor_37e4e006cca7cf40, []int{1}
-}
-
-func (m *WrappedBznMsg) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_WrappedBznMsg.Unmarshal(m, b)
-}
-func (m *WrappedBznMsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_WrappedBznMsg.Marshal(b, m, deterministic)
-}
-func (m *WrappedBznMsg) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WrappedBznMsg.Merge(m, src)
-}
-func (m *WrappedBznMsg) XXX_Size() int {
-	return xxx_messageInfo_WrappedBznMsg.Size(m)
-}
-func (m *WrappedBznMsg) XXX_DiscardUnknown() {
-	xxx_messageInfo_WrappedBznMsg.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_WrappedBznMsg proto.InternalMessageInfo
-
-func (m *WrappedBznMsg) GetPayload() []byte {
-	if m != nil {
-		return m.Payload
-	}
-	return nil
-}
-
-func (m *WrappedBznMsg) GetType() BznMsgType {
-	if m != nil {
-		return m.Type
-	}
-	return BznMsgType_BZN_MSG_UNDEFINED
-}
-
 func init() {
-	proto.RegisterEnum("pb.BznMsgType", BznMsgType_name, BznMsgType_value)
-	proto.RegisterType((*BznMsg)(nil), "pb.bzn_msg")
-	proto.RegisterType((*WrappedBznMsg)(nil), "pb.wrapped_bzn_msg")
+	proto.RegisterType((*BznEnvelope)(nil), "pb.bzn_envelope")
 }
 
 func init() { proto.RegisterFile("bluzelle.proto", fileDescriptor_37e4e006cca7cf40) }
 
 var fileDescriptor_37e4e006cca7cf40 = []byte{
-	// 282 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x90, 0xb1, 0x4e, 0xf3, 0x30,
-	0x14, 0x85, 0xe3, 0xfc, 0xfd, 0xa9, 0xb8, 0x75, 0x43, 0x6a, 0x81, 0x64, 0x75, 0x8a, 0x22, 0x86,
-	0x88, 0x21, 0x03, 0x0c, 0x30, 0x47, 0x6d, 0x09, 0x43, 0x23, 0x08, 0xb0, 0xb0, 0x58, 0xb6, 0x6c,
-	0x22, 0x50, 0xd2, 0x58, 0x75, 0x2a, 0xd4, 0x3e, 0x11, 0x8f, 0x89, 0xec, 0x26, 0x12, 0x6c, 0x3e,
-	0xdf, 0xd1, 0x39, 0xf7, 0xfa, 0x42, 0x20, 0xea, 0xdd, 0x41, 0xd5, 0xb5, 0x4a, 0xf5, 0xb6, 0xed,
-	0x5a, 0xe2, 0x6b, 0x31, 0x0f, 0x24, 0xef, 0xb8, 0xe0, 0xa6, 0x67, 0xf3, 0x09, 0xdf, 0xc9, 0x8f,
-	0xae, 0x17, 0xa0, 0xc5, 0x7b, 0xff, 0x8e, 0xbf, 0x11, 0x8c, 0xc5, 0x61, 0xc3, 0x1a, 0x53, 0x91,
-	0x18, 0x7c, 0x29, 0x28, 0x44, 0x28, 0x99, 0x5c, 0x87, 0xa9, 0x16, 0xe9, 0x50, 0x62, 0xdd, 0xdc,
-	0x2b, 0x7d, 0x29, 0xc8, 0x39, 0x8c, 0x3e, 0x4d, 0xbb, 0xa1, 0x93, 0x08, 0x25, 0xa7, 0xb9, 0x57,
-	0x3a, 0x45, 0xee, 0x60, 0xea, 0x06, 0xb0, 0x46, 0x19, 0xc3, 0x2b, 0x45, 0xb1, 0x2b, 0x99, 0xd9,
-	0x92, 0x3f, 0x46, 0xee, 0x95, 0xd8, 0x81, 0xf5, 0x51, 0x93, 0x18, 0x46, 0x76, 0x1b, 0x3a, 0x75,
-	0x01, 0x6c, 0x03, 0x56, 0xf7, 0x13, 0x9d, 0x97, 0xfd, 0x87, 0x7f, 0x8d, 0xa9, 0xe2, 0x27, 0x38,
-	0xfb, 0xda, 0x72, 0xad, 0x95, 0x64, 0xc3, 0xc6, 0x14, 0xc6, 0x9a, 0xef, 0xeb, 0x96, 0x4b, 0x8a,
-	0x22, 0x94, 0xe0, 0x72, 0x90, 0xe4, 0x12, 0x46, 0xdd, 0x5e, 0x2b, 0xea, 0x47, 0x28, 0x09, 0x8e,
-	0xbf, 0xe9, 0x43, 0xcc, 0xf2, 0xd2, 0xb9, 0x57, 0xb7, 0x80, 0x7f, 0x53, 0x72, 0x01, 0xb3, 0xec,
-	0xad, 0x60, 0xeb, 0xe7, 0x7b, 0xf6, 0x5a, 0x2c, 0x96, 0xab, 0x87, 0x62, 0xb9, 0x08, 0x3d, 0x12,
-	0x02, 0x1e, 0xf0, 0x63, 0xb6, 0x7a, 0x09, 0x91, 0x38, 0x71, 0xd7, 0xbb, 0xf9, 0x09, 0x00, 0x00,
-	0xff, 0xff, 0xd3, 0x76, 0xc2, 0x18, 0x7c, 0x01, 0x00, 0x00,
+	// 299 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x44, 0x91, 0x41, 0x4e, 0xeb, 0x30,
+	0x10, 0x86, 0x5f, 0xda, 0xbe, 0xa2, 0x4e, 0xd3, 0xb4, 0x35, 0x50, 0x79, 0xc1, 0xa2, 0x82, 0x05,
+	0xed, 0x02, 0x36, 0x70, 0x02, 0x56, 0xb0, 0xe8, 0x26, 0x17, 0x88, 0x6c, 0x65, 0x28, 0x41, 0x89,
+	0x6d, 0x3c, 0x0e, 0x12, 0x3d, 0x1a, 0xa7, 0x43, 0x4e, 0xec, 0x74, 0xf9, 0xff, 0xdf, 0x37, 0x93,
+	0x8c, 0x0c, 0x99, 0xac, 0xdb, 0x13, 0xd6, 0x35, 0x3e, 0x1a, 0xab, 0x9d, 0x66, 0x23, 0x23, 0x6f,
+	0x7f, 0xc7, 0x90, 0xca, 0x93, 0x2a, 0x50, 0x7d, 0x63, 0xad, 0x0d, 0xb2, 0x0d, 0x4c, 0x09, 0x55,
+	0x89, 0x96, 0x27, 0xdb, 0x64, 0x37, 0xcb, 0x43, 0x62, 0x37, 0x30, 0xa3, 0xea, 0xa8, 0x84, 0x6b,
+	0x2d, 0xf2, 0xd1, 0x36, 0xd9, 0xa5, 0xf9, 0xb9, 0xf0, 0xd4, 0x55, 0x0d, 0x92, 0x13, 0x8d, 0xe1,
+	0xe3, 0x6d, 0xb2, 0x9b, 0xe4, 0xe7, 0x82, 0xdd, 0x41, 0x5a, 0x0a, 0x27, 0xa4, 0x20, 0x2c, 0x1a,
+	0x3a, 0x72, 0xf0, 0xe3, 0xaf, 0xff, 0xf2, 0x79, 0x6c, 0x0f, 0x74, 0x64, 0xcf, 0x70, 0x6d, 0xe4,
+	0xbb, 0x2b, 0x2a, 0xe5, 0xd0, 0x2a, 0x51, 0x17, 0x16, 0xbf, 0x5a, 0x24, 0xc7, 0xe7, 0xc1, 0xbe,
+	0xf4, 0xf8, 0x2d, 0xd0, 0xbc, 0x87, 0xec, 0x01, 0xd6, 0xc3, 0x6a, 0x8b, 0x64, 0xb4, 0x22, 0xe4,
+	0x69, 0x98, 0x58, 0x45, 0x94, 0x07, 0xc2, 0xae, 0x60, 0xf2, 0x49, 0x5a, 0xf1, 0x45, 0x30, 0xba,
+	0xc4, 0x36, 0xf0, 0x5f, 0xb4, 0x65, 0xe5, 0x78, 0x16, 0xea, 0x3e, 0x7a, 0xdb, 0x7f, 0x93, 0x2f,
+	0xa3, 0xed, 0x13, 0xdb, 0xc3, 0xb2, 0xfb, 0xd1, 0x06, 0x1b, 0x89, 0x96, 0x3e, 0x2a, 0xc3, 0x57,
+	0x41, 0xc8, 0x3c, 0x38, 0x0c, 0x3d, 0xbb, 0x87, 0x8c, 0x9c, 0x70, 0x2d, 0x0d, 0xc7, 0xac, 0x83,
+	0xb9, 0xe8, 0xfb, 0x78, 0xc6, 0x1e, 0x96, 0x83, 0x18, 0x8e, 0x60, 0x71, 0x67, 0x34, 0xfb, 0xfe,
+	0x65, 0x06, 0x17, 0x46, 0xfc, 0xd4, 0x5a, 0x94, 0x72, 0xda, 0xbd, 0xe3, 0xd3, 0x5f, 0x00, 0x00,
+	0x00, 0xff, 0xff, 0x2a, 0x6b, 0x5a, 0xa5, 0xd9, 0x01, 0x00, 0x00,
 }
