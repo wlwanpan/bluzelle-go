@@ -1,5 +1,8 @@
 package main
 
+// Layer 1: Persistent Connection
+// Doc reference (https://devel-docs.bluzelle.com/client-development-guide/layers/layer-1-persistent-connection)
+
 import (
 	"log"
 	"net/url"
