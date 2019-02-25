@@ -1,50 +1,116 @@
 package main
 
 // Layer 2: Cryptographic Layer
-// Doc reference (https://github.com/bluzelle/client-development-guide/blob/v0.4.x/layers/layer-1-persistent-connection.md)
+// (https://github.com/bluzelle/client-development-guide/blob/v0.4.x/layers/layer-1-persistent-connection.md)
 
 import (
-	"crypto/rsa"
-	"crypto/x509"
+	"bytes"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/pem"
+	"log"
+	"strconv"
 	"time"
 
+	"github.com/decred/dcrd/dcrec/secp256k1"
 	"github.com/gogo/protobuf/proto"
 	"github.com/wlwanpan/bluzelle-go/pb"
 )
 
+const (
+	EC_PRIVATE_KEY = "EC PRIVATE KEY"
+)
+
 type Crypto struct {
-	pubKey  *rsa.PublicKey
-	privKey []byte
+	privKey *ecdsa.PrivateKey
+
+	serializedPubKey []byte
 }
 
-func NewCrypto(privPem string) *Crypto {
-	block, _ := pem.Decode([]byte(privPem))
-	cert, _ := x509.ParseCertificate(block.Bytes)
-	pubKey := cert.PublicKey.(*rsa.PublicKey)
+func NewCrypto(privPem []byte) *Crypto {
+	block, _ := pem.Decode(privPem)
+	if block.Type != EC_PRIVATE_KEY {
+		log.Fatal("pem file loaded not ecdsa")
+	}
+
+	privKey, _ := secp256k1.PrivKeyFromBytes(block.Bytes)
 
 	return &Crypto{
-		pubKey:  pubKey,
-		privKey: block.Bytes,
+		privKey: privKey.ToECDSA(),
 	}
 }
 
-func (ct *Crypto) GetPubKey() []byte {
-	block := &pem.Block{
-		Bytes: x509.MarshalPKCS1PublicKey(ct.pubKey),
+func (ct *Crypto) PubKey() []byte {
+	if len(ct.serializedPubKey) != 0 {
+		return ct.serializedPubKey
 	}
-	return pem.EncodeToMemory(block)
+	pubKey := ct.privKey.PublicKey
+	ct.serializedPubKey = elliptic.Marshal(pubKey, pubKey.X, pubKey.Y)
+	return ct.serializedPubKey
+}
+
+func (ct *Crypto) PPubKey() string {
+	pk := ct.PubKey()
+	return base64.StdEncoding.EncodeToString(pk)
+}
+
+func (ct *Crypto) setSignature(blzEnvelope *pb.BznEnvelope, payload []byte) {
+	timeStamp := blzEnvelope.GetTimestamp()
+	timeStampAsStr := strconv.Itoa(int(timeStamp))
+
+	payloadCase := blzEnvelope.GetDatabaseMsg()
+
+	digest := serializeAndConcat(ct.PPubKey(), string(payloadCase), string(payload), timeStampAsStr)
+
+	signature, err := ct.privKey.Sign(rand.Reader, digest, crypto.SHA512)
+	if err != nil {
+		log.Fatal("From signing digest: ", err)
+	}
+
+	blzEnvelope.Signature = signature
 }
 
 func (ct *Crypto) SignMsg(payload []byte) ([]byte, error) {
 	pbBlzEnvelop := &pb.BznEnvelope{
-		Sender:    string(ct.GetPubKey()),
+		Sender:    ct.PPubKey(),
 		Timestamp: uint64(time.Now().UTC().Unix()),
-		Signature: []byte{}, // calc signature
 		Payload: &pb.BznEnvelope_DatabaseMsg{
 			DatabaseMsg: payload,
 		},
 	}
-	data, err := proto.Marshal(pbBlzEnvelop)
-	return data, err
+
+	ct.setSignature(pbBlzEnvelop, payload)
+	return proto.Marshal(pbBlzEnvelop)
+}
+
+func serializeAndConcat(data ...string) []byte {
+	var buffer bytes.Buffer
+	for _, d := range data {
+		serData := serialize(d)
+		buffer.WriteString(serData)
+	}
+
+	log.Println("Digest generated: ", buffer.String())
+	return buffer.Bytes()
+}
+
+func serialize(data string) string {
+	var buffer bytes.Buffer
+	buffer.WriteString(strconv.Itoa(len(data)))
+	buffer.WriteString("|")
+	buffer.WriteString(data)
+	return encodeToASCII(buffer.String())
+}
+
+func encodeToASCII(str string) string {
+	rs := make([]rune, 0, len(str))
+	for _, r := range str {
+		if r <= 127 {
+			rs = append(rs, r)
+		}
+	}
+	return string(rs)
 }

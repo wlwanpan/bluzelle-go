@@ -1,7 +1,7 @@
 package main
 
 // Layer 1: Persistent Connection
-// Doc reference (https://devel-docs.bluzelle.com/client-development-guide/layers/layer-1-persistent-connection)
+// https://devel-docs.bluzelle.com/client-development-guide/layers/layer-1-persistent-connection)
 
 import (
 	"log"
@@ -42,9 +42,10 @@ func (conn *Conn) Dial() error {
 	conn.conn = c
 	go func() {
 		for {
-			_, r, err := c.ReadMessage()
+			messageType, r, err := c.ReadMessage()
 			if err != nil {
-				log.Print(err)
+				log.Println(messageType)
+				log.Println("Error from connection read message:", err)
 			}
 			conn.IncomingMsg <- r
 		}
