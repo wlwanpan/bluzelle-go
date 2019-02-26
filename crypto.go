@@ -60,10 +60,9 @@ func (ct *Crypto) PPubKey() string {
 func (ct *Crypto) setSignature(blzEnvelope *pb.BznEnvelope, payload []byte) {
 	timeStamp := blzEnvelope.GetTimestamp()
 	timeStampAsStr := strconv.Itoa(int(timeStamp))
+	payloadCase := getPayloadCase(blzEnvelope)
 
-	payloadCase := blzEnvelope.GetDatabaseMsg()
-
-	digest := serializeAndConcat(ct.PPubKey(), string(payloadCase), string(payload), timeStampAsStr)
+	digest := serializeAndConcat(ct.PPubKey(), payloadCase, string(payload[:]), timeStampAsStr)
 
 	signature, err := ct.privKey.Sign(rand.Reader, digest, crypto.SHA512)
 	if err != nil {
@@ -76,6 +75,7 @@ func (ct *Crypto) setSignature(blzEnvelope *pb.BznEnvelope, payload []byte) {
 func (ct *Crypto) SignMsg(payload []byte) ([]byte, error) {
 	pbBlzEnvelop := &pb.BznEnvelope{
 		Sender:    ct.PPubKey(),
+		Signature: []byte{},
 		Timestamp: uint64(time.Now().UTC().Unix()),
 		Payload: &pb.BznEnvelope_DatabaseMsg{
 			DatabaseMsg: payload,
@@ -93,16 +93,19 @@ func serializeAndConcat(data ...string) []byte {
 		buffer.WriteString(serData)
 	}
 
-	log.Println("Digest generated: ", buffer.String())
-	return buffer.Bytes()
+	str := buffer.String()
+	log.Println("Digest generated: ", str)
+	encodedData := encodeToASCII(str)
+	return []byte(encodedData)
 }
 
 func serialize(data string) string {
 	var buffer bytes.Buffer
-	buffer.WriteString(strconv.Itoa(len(data)))
+	parsedData := encodeToASCII(data)
+	buffer.WriteString(strconv.Itoa(len(parsedData)))
 	buffer.WriteString("|")
-	buffer.WriteString(data)
-	return encodeToASCII(buffer.String())
+	buffer.WriteString(parsedData)
+	return buffer.String()
 }
 
 func encodeToASCII(str string) string {
@@ -113,4 +116,16 @@ func encodeToASCII(str string) string {
 		}
 	}
 	return string(rs)
+}
+
+func getPayloadCase(bzn *pb.BznEnvelope) string {
+	// Proto index case check proto/bluzelle.proto for more details
+	var idx int
+	if bzn.GetDatabaseMsg() != nil {
+		idx = 10
+	}
+	if bzn.GetPbftInternalRequest() != nil {
+		idx = 11
+	}
+	return strconv.Itoa(idx)
 }
