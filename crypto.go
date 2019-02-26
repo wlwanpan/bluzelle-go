@@ -5,12 +5,10 @@ package main
 
 import (
 	"bytes"
-	"crypto"
-	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/pem"
+	"errors"
 	"log"
 	"strconv"
 	"time"
@@ -25,7 +23,7 @@ const (
 )
 
 type Crypto struct {
-	privKey *ecdsa.PrivateKey
+	privKey *secp256k1.PrivateKey
 
 	serializedPubKey []byte
 }
@@ -39,7 +37,7 @@ func NewCrypto(privPem []byte) *Crypto {
 	privKey, _ := secp256k1.PrivKeyFromBytes(block.Bytes)
 
 	return &Crypto{
-		privKey: privKey.ToECDSA(),
+		privKey: privKey,
 	}
 }
 
@@ -47,7 +45,7 @@ func (ct *Crypto) PubKey() []byte {
 	if len(ct.serializedPubKey) != 0 {
 		return ct.serializedPubKey
 	}
-	pubKey := ct.privKey.PublicKey
+	pubKey := ct.privKey.PubKey()
 	ct.serializedPubKey = elliptic.Marshal(pubKey, pubKey.X, pubKey.Y)
 	return ct.serializedPubKey
 }
@@ -57,19 +55,26 @@ func (ct *Crypto) PPubKey() string {
 	return base64.StdEncoding.EncodeToString(pk)
 }
 
-func (ct *Crypto) setSignature(blzEnvelope *pb.BznEnvelope, payload []byte) {
+func (ct *Crypto) setSignature(blzEnvelope *pb.BznEnvelope, payload []byte) error {
 	timeStamp := blzEnvelope.GetTimestamp()
 	timeStampAsStr := strconv.Itoa(int(timeStamp))
 	payloadCase := getPayloadCase(blzEnvelope)
 
 	digest := serializeAndConcat(ct.PPubKey(), payloadCase, string(payload[:]), timeStampAsStr)
 
-	signature, err := ct.privKey.Sign(rand.Reader, digest, crypto.SHA512)
+	signature, err := ct.privKey.Sign(digest)
 	if err != nil {
-		log.Fatal("From signing digest: ", err)
+		log.Println("From signing digest: ", err)
+		return err
 	}
 
-	blzEnvelope.Signature = signature
+	if !signature.Verify(digest, ct.privKey.PubKey()) {
+		log.Println("From signing digest: failed to verify signature")
+		return errors.New("failed to verify signature")
+	}
+
+	blzEnvelope.Signature = signature.Serialize()
+	return nil
 }
 
 func (ct *Crypto) SignMsg(payload []byte) ([]byte, error) {
@@ -82,7 +87,9 @@ func (ct *Crypto) SignMsg(payload []byte) ([]byte, error) {
 		},
 	}
 
-	ct.setSignature(pbBlzEnvelop, payload)
+	if err := ct.setSignature(pbBlzEnvelop, payload); err != nil {
+		return []byte{}, err
+	}
 	return proto.Marshal(pbBlzEnvelop)
 }
 
