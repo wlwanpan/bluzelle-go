@@ -18,7 +18,7 @@ type Conn struct {
 	// IncomingMsg
 	IncomingMsg chan []byte
 
-	conn *websocket.Conn
+	webConn *websocket.Conn
 }
 
 // NewConn creates a new conn
@@ -26,7 +26,7 @@ func NewConn(endpoint string) *Conn {
 	return &Conn{
 		Endpoint:    endpoint,
 		IncomingMsg: make(chan []byte),
-		conn:        nil,
+		webConn:     nil,
 	}
 }
 
@@ -39,14 +39,15 @@ func (conn *Conn) Dial() error {
 		return err
 	}
 
-	conn.conn = c
+	conn.webConn = c
 	go func() {
 		for {
 			messageType, r, err := c.ReadMessage()
 			if err != nil {
-				log.Println(messageType)
 				log.Println("Error from connection read message:", err)
 			}
+			log.Println(messageType)
+			log.Println(r)
 			conn.IncomingMsg <- r
 		}
 	}()
@@ -59,5 +60,5 @@ func (conn *Conn) ReadMsg() <-chan []byte {
 }
 
 func (conn *Conn) SendMsg(data []byte) error {
-	return conn.conn.WriteMessage(websocket.TextMessage, data)
+	return conn.webConn.WriteMessage(websocket.TextMessage, data)
 }

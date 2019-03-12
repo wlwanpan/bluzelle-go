@@ -53,12 +53,8 @@ func (blz *Bluzelle) Dial() error {
 	return blz.conn.Dial()
 }
 
-func (blz *Bluzelle) sendReq(pbDbMsg *pb.DatabaseMsg) error {
-	data, err := proto.Marshal(pbDbMsg)
-	if err != nil {
-		return err
-	}
-	signedData, err := blz.crypto.SignMsg(data)
+func (blz *Bluzelle) sendReq(dbMsg *pb.DatabaseMsg) error {
+	signedData, err := blz.crypto.SignMsg(dbMsg)
 	if err != nil {
 		log.Println("Error signing data: ", err)
 		return err

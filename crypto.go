@@ -14,12 +14,18 @@ import (
 	"time"
 
 	"github.com/decred/dcrd/dcrec/secp256k1"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/wlwanpan/bluzelle-go/pb"
 )
 
+var (
+	ErrInvalidPayloadCase = errors.New("crypto: invalid payload case")
+
+	ErrSigVerificationFailed = errors.New("crypto: failed to verify sig")
+)
+
 const (
-	EC_PRIVATE_KEY = "EC PRIVATE KEY"
+	EcPrivateKey = "EC PRIVATE KEY"
 )
 
 type Crypto struct {
@@ -30,7 +36,7 @@ type Crypto struct {
 
 func NewCrypto(privPem []byte) *Crypto {
 	block, _ := pem.Decode(privPem)
-	if block.Type != EC_PRIVATE_KEY {
+	if block.Type != EcPrivateKey {
 		log.Fatal("pem file loaded not ecdsa")
 	}
 
@@ -52,32 +58,48 @@ func (ct *Crypto) PubKey() []byte {
 
 func (ct *Crypto) PPubKey() string {
 	pk := ct.PubKey()
-	return base64.StdEncoding.EncodeToString(pk)
+	// Todo: why is this header needed ?
+	return "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE" + base64.StdEncoding.EncodeToString(pk)
 }
 
-func (ct *Crypto) setSignature(blzEnvelope *pb.BznEnvelope, payload []byte) error {
+func (ct *Crypto) setSignature(blzEnvelope *pb.BznEnvelope, payload string) error {
 	timeStamp := blzEnvelope.GetTimestamp()
 	timeStampAsStr := strconv.Itoa(int(timeStamp))
-	payloadCase := getPayloadCase(blzEnvelope)
 
-	digest := serializeAndConcat(ct.PPubKey(), payloadCase, string(payload[:]), timeStampAsStr)
+	payloadCase, err := getPayloadCase(blzEnvelope)
+	if err != nil {
+		return err
+	}
 
-	signature, err := ct.privKey.Sign(digest)
+	binForWin := []string{
+		ct.PPubKey(),
+		payloadCase,
+		string(blzEnvelope.GetDatabaseMsg()),
+		timeStampAsStr,
+	}
+
+	digest := serializeAndConcat(binForWin)
+
+	sig, err := ct.privKey.Sign(digest)
 	if err != nil {
 		log.Println("From signing digest: ", err)
 		return err
 	}
 
-	if !signature.Verify(digest, ct.privKey.PubKey()) {
-		log.Println("From signing digest: failed to verify signature")
-		return errors.New("failed to verify signature")
+	if !sig.Verify(digest, ct.privKey.PubKey()) {
+		return ErrSigVerificationFailed
 	}
 
-	blzEnvelope.Signature = signature.Serialize()
+	blzEnvelope.Signature = sig.Serialize()
 	return nil
 }
 
-func (ct *Crypto) SignMsg(payload []byte) ([]byte, error) {
+func (ct *Crypto) SignMsg(dbMsg *pb.DatabaseMsg) ([]byte, error) {
+	payload, err := proto.Marshal(dbMsg)
+	if err != nil {
+		return []byte{}, err
+	}
+	log.Println(payload)
 	pbBlzEnvelop := &pb.BznEnvelope{
 		Sender:    ct.PPubKey(),
 		Signature: []byte{},
@@ -87,31 +109,30 @@ func (ct *Crypto) SignMsg(payload []byte) ([]byte, error) {
 		},
 	}
 
-	if err := ct.setSignature(pbBlzEnvelop, payload); err != nil {
+	if err := ct.setSignature(pbBlzEnvelop, dbMsg.String()); err != nil {
 		return []byte{}, err
 	}
 	return proto.Marshal(pbBlzEnvelop)
 }
 
-func serializeAndConcat(data ...string) []byte {
+func serializeAndConcat(data []string) []byte {
 	var buffer bytes.Buffer
 	for _, d := range data {
-		serData := serialize(d)
+		serData := deterministicSerialize(d)
 		buffer.WriteString(serData)
 	}
 
 	str := buffer.String()
-	log.Println("Digest generated: ", str)
 	encodedData := encodeToASCII(str)
+	log.Println("Digest generated: ", encodedData)
 	return []byte(encodedData)
 }
 
-func serialize(data string) string {
+func deterministicSerialize(data string) string {
 	var buffer bytes.Buffer
-	parsedData := encodeToASCII(data)
-	buffer.WriteString(strconv.Itoa(len(parsedData)))
+	buffer.WriteString(strconv.Itoa(len(data)))
 	buffer.WriteString("|")
-	buffer.WriteString(parsedData)
+	buffer.WriteString(data)
 	return buffer.String()
 }
 
@@ -125,14 +146,18 @@ func encodeToASCII(str string) string {
 	return string(rs)
 }
 
-func getPayloadCase(bzn *pb.BznEnvelope) string {
+func getPayloadCase(bzn *pb.BznEnvelope) (string, error) {
 	// Proto index case check proto/bluzelle.proto for more details
-	var idx int
+	var output int
 	if bzn.GetDatabaseMsg() != nil {
-		idx = 10
+		output = 10
 	}
 	if bzn.GetPbftInternalRequest() != nil {
-		idx = 11
+		output = 11
 	}
-	return strconv.Itoa(idx)
+
+	if output < 10 || output > 18 {
+		return "", ErrInvalidPayloadCase
+	}
+	return strconv.Itoa(output), nil
 }
