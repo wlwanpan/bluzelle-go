@@ -8,6 +8,7 @@
 ## About bluzelle-go
 
 bluzelle-go is a go client built on top of [WebSocket API](https://bluzelle.github.io/api/#websocket-api) that connect to Bluzelle SwarmDB for basic CRUD operations.
+Under active development to support [Bernoulli](https://bluzelle.com/blog/bluzelle-beta-is-now-live) release.
 
 ## Getting Started
 
