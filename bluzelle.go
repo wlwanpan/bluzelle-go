@@ -1,15 +1,12 @@
 package main
 
-// TODO: Seperate 3 and 4.
-// Layer 3 + 4: Metadata and API Layer
-// (https://github.com/bluzelle/client-development-guide/blob/v0.4.x/layers/layer-4-api-layer.md)
+// Layer 4: API Layer
+// https://github.com/bluzelle/client-development-guide/blob/v0.4.x/layers/layer-4-api-layer.md
 
 import (
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"os"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/wlwanpan/bluzelle-go/pb"
@@ -17,56 +14,110 @@ import (
 
 // Bluzelle represents a client connection to the bluzelle network.
 type Bluzelle struct {
+	// Layers
+	*Metadata
+	*Crypto
+	*Conn
+
 	Entry string
 	UUID  string
 
-	// Bluzelle layers
-	conn   *Conn
-	crypto *Crypto
+	privPem []byte
 }
 
 // Connect initialize a new bluzelle struct.
 func Connect(entry, uuid string, privPem []byte) (*Bluzelle, error) {
 	blz := &Bluzelle{
-		Entry:  entry,
-		UUID:   uuid,
-		conn:   NewConn(entry),
-		crypto: NewCrypto(privPem),
+		Entry:   entry,
+		UUID:    uuid,
+		privPem: privPem,
 	}
-	if err := blz.Dial(); err != nil {
+	if err := blz.initLayers(); err != nil {
 		return nil, err
 	}
 	return blz, nil
 }
 
-// PublicKey returns the corresponding public key from the bluzelle private pem.
-func (blz *Bluzelle) PublicKey() []byte {
-	return blz.crypto.PubKey()
+func (blz *Bluzelle) initLayers() error {
+	blz.Metadata = &Metadata{blz: blz}
+
+	crypto, err := NewCrypto(blz.privPem)
+	if err != nil {
+		return err
+	}
+	blz.Crypto = crypto
+
+	blz.Conn = NewConn(blz.Entry)
+	if err := blz.Dial(); err != nil {
+		return err
+	}
+	return nil
 }
 
-// PPublicKey returns the corresponding public key in hex string format.
-func (blz *Bluzelle) PPublicKey() string {
-	return blz.crypto.PPubKey()
+// Adming APIs (https://docs.bluzelle.com/bluzelle-js/api)
+
+func (blz *Bluzelle) Status() {}
+
+func (blz *Bluzelle) Close() {}
+
+func (blz *Bluzelle) CreateDB() error {
+	blzMsg := blz.newDatabaseMsg()
+	blzMsg.Msg = &pb.DatabaseMsg_CreateDb{
+		CreateDb: &pb.DatabaseRequest{},
+	}
+	return blz.sendReq(blzMsg)
 }
 
-func (blz *Bluzelle) Dial() error {
-	return blz.conn.Dial()
+func (blz *Bluzelle) DeleteDB() {}
+
+func (blz *Bluzelle) HasDB() {}
+
+// PublicKey returns the corresponding public key in hex string format.
+func (blz *Bluzelle) PublicKey() string {
+	return blz.PPubKey()
 }
+
+func (blz *Bluzelle) GetWriters() {}
+
+func (blz *Bluzelle) AddWriters() {}
+
+func (blz *Bluzelle) DeleteWriters() {}
+
+// Database APIs
+
+func (blz *Bluzelle) Create() {}
+
+func (blz *Bluzelle) Read() {}
+
+func (blz *Bluzelle) Update() {}
+
+func (blz *Bluzelle) QuickRead() {}
+
+func (blz *Bluzelle) Delete() {}
+
+func (blz *Bluzelle) Has() {}
+
+func (blz *Bluzelle) Keys() {}
+
+func (blz *Bluzelle) Size() {}
+
+// Private
 
 func (blz *Bluzelle) sendReq(dbMsg *pb.DatabaseMsg) error {
-	signedData, err := blz.crypto.SignMsg(dbMsg)
+	signedData, err := blz.SignMsg(dbMsg)
 	if err != nil {
 		log.Println("Error signing data: ", err)
 		return err
 	}
-	blz.conn.SendMsg(signedData)
+	blz.SendMsg(signedData)
 
 	select {
-	case resp := <-blz.conn.ReadMsg():
+	case resp := <-blz.ReadMsg():
 		blzEnvelop := &pb.BznEnvelope{}
 		if err := proto.Unmarshal(resp, blzEnvelop); err != nil {
 			log.Fatal(err)
 		}
+
 		dbResp := blzEnvelop.GetDatabaseResponse()
 		pbresp := &pb.DatabaseResponse{}
 		if err = proto.Unmarshal(dbResp, pbresp); err != nil {
@@ -76,30 +127,6 @@ func (blz *Bluzelle) sendReq(dbMsg *pb.DatabaseMsg) error {
 		log.Println("db uuid: ", dbErr.GetDbUuid())
 	}
 	return nil
-}
-
-func (blz *Bluzelle) CreateDB() {
-	blzMsg := blz.newDatabaseMsg()
-	blzMsg.Msg = &pb.DatabaseMsg_CreateDb{
-		CreateDb: &pb.DatabaseRequest{},
-	}
-	blz.sendReq(blzMsg)
-}
-
-func (blz *Bluzelle) newDatabaseMsg() *pb.DatabaseMsg {
-	return &pb.DatabaseMsg{
-		Header: &pb.DatabaseHeader{
-			DbUuid:         blz.UUID,
-			Nonce:          blz.randNonce(),
-			PointOfContact: []byte{},
-		},
-	}
-}
-
-func (blz *Bluzelle) randNonce() uint64 {
-	now := time.Now().UTC().Unix()
-	r := rand.New(rand.NewSource(now))
-	return r.Uint64()
 }
 
 // ReadPemFile reads a private pem file.

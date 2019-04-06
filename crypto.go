@@ -1,7 +1,7 @@
 package main
 
 // Layer 2: Cryptographic Layer
-// (https://github.com/bluzelle/client-development-guide/blob/v0.4.x/layers/layer-1-persistent-connection.md)
+// https://github.com/bluzelle/client-development-guide/blob/v0.4.x/layers/layer-1-persistent-connection.md
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"log"
 	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"github.com/decred/dcrd/dcrec/secp256k1"
 	"github.com/golang/protobuf/proto"
@@ -19,13 +20,15 @@ import (
 )
 
 var (
+	ErrPemfileNotECDSA = errors.New("crypto: pem file loaded not ecdsa")
+
 	ErrInvalidPayloadCase = errors.New("crypto: invalid payload case")
 
-	ErrSigVerificationFailed = errors.New("crypto: failed to verify sig")
+	ErrSigVerificationFailed = errors.New("crypto: fail to verify sig")
 )
 
 const (
-	EcPrivateKey = "EC PRIVATE KEY"
+	EcPrivateKey string = "EC PRIVATE KEY"
 )
 
 type Crypto struct {
@@ -34,20 +37,17 @@ type Crypto struct {
 	serializedPubKey []byte
 }
 
-func NewCrypto(privPem []byte) *Crypto {
+func NewCrypto(privPem []byte) (*Crypto, error) {
 	block, _ := pem.Decode(privPem)
 	if block.Type != EcPrivateKey {
-		log.Fatal("pem file loaded not ecdsa")
+		return nil, ErrPemfileNotECDSA
 	}
 
 	privKey, _ := secp256k1.PrivKeyFromBytes(block.Bytes)
-
-	return &Crypto{
-		privKey: privKey,
-	}
+	return &Crypto{privKey: privKey}, nil
 }
 
-func (ct *Crypto) PubKey() []byte {
+func (ct *Crypto) GenPubKey() []byte {
 	if len(ct.serializedPubKey) != 0 {
 		return ct.serializedPubKey
 	}
@@ -57,12 +57,12 @@ func (ct *Crypto) PubKey() []byte {
 }
 
 func (ct *Crypto) PPubKey() string {
-	pk := ct.PubKey()
-	// Todo: why is this header needed ?
+	pk := ct.GenPubKey()
+	// Todo: confirm why is this header needed ?
 	return "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE" + base64.StdEncoding.EncodeToString(pk)
 }
 
-func (ct *Crypto) setSignature(blzEnvelope *pb.BznEnvelope, payload string) error {
+func (ct *Crypto) setMsgSig(blzEnvelope *pb.BznEnvelope) error {
 	timeStamp := blzEnvelope.GetTimestamp()
 	timeStampAsStr := strconv.Itoa(int(timeStamp))
 
@@ -73,7 +73,7 @@ func (ct *Crypto) setSignature(blzEnvelope *pb.BznEnvelope, payload string) erro
 
 	binForWin := []string{
 		ct.PPubKey(),
-		payloadCase,
+		strconv.Itoa(payloadCase),
 		string(blzEnvelope.GetDatabaseMsg()),
 		timeStampAsStr,
 	}
@@ -99,7 +99,6 @@ func (ct *Crypto) SignMsg(dbMsg *pb.DatabaseMsg) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
-	log.Println(payload)
 	pbBlzEnvelop := &pb.BznEnvelope{
 		Sender:    ct.PPubKey(),
 		Signature: []byte{},
@@ -109,23 +108,23 @@ func (ct *Crypto) SignMsg(dbMsg *pb.DatabaseMsg) ([]byte, error) {
 		},
 	}
 
-	if err := ct.setSignature(pbBlzEnvelop, dbMsg.String()); err != nil {
+	if err := ct.setMsgSig(pbBlzEnvelop); err != nil {
 		return []byte{}, err
 	}
 	return proto.Marshal(pbBlzEnvelop)
 }
 
-func serializeAndConcat(data []string) []byte {
+func serializeAndConcat(s []string) []byte {
 	var buffer bytes.Buffer
-	for _, d := range data {
-		serData := deterministicSerialize(d)
-		buffer.WriteString(serData)
+	for _, data := range s {
+		ds := deterministicSerialize(data)
+		encodedDs := StringToAsciiBytes(ds)
+		buffer.WriteString(string(encodedDs))
 	}
 
-	str := buffer.String()
-	encodedData := encodeToASCII(str)
-	log.Println("Digest generated: ", encodedData)
-	return []byte(encodedData)
+	result := buffer.Bytes()
+	log.Println("Digest generated: ", result)
+	return result
 }
 
 func deterministicSerialize(data string) string {
@@ -136,28 +135,41 @@ func deterministicSerialize(data string) string {
 	return buffer.String()
 }
 
-func encodeToASCII(str string) string {
-	rs := make([]rune, 0, len(str))
-	for _, r := range str {
-		if r <= 127 {
-			rs = append(rs, r)
-		}
+func StringToAsciiBytes(s string) []byte {
+	t := make([]byte, utf8.RuneCountInString(s))
+	i := 0
+	for _, r := range s {
+		t[i] = byte(r)
+		i++
 	}
-	return string(rs)
+	return t
 }
 
-func getPayloadCase(bzn *pb.BznEnvelope) (string, error) {
-	// Proto index case check proto/bluzelle.proto for more details
+func getPayloadCase(bzn *pb.BznEnvelope) (int, error) {
+	// Proto index case check proto/proto/bluzelle.proto for more details
 	var output int
-	if bzn.GetDatabaseMsg() != nil {
+	var err error
+	switch bzn.GetPayload().(type) {
+	case *pb.BznEnvelope_DatabaseMsg:
 		output = 10
-	}
-	if bzn.GetPbftInternalRequest() != nil {
+	case *pb.BznEnvelope_PbftInternalRequest:
 		output = 11
+	case *pb.BznEnvelope_DatabaseResponse:
+		output = 12
+	case *pb.BznEnvelope_Json:
+		output = 13
+	case *pb.BznEnvelope_Audit:
+		output = 14
+	case *pb.BznEnvelope_Pbft:
+		output = 15
+	case *pb.BznEnvelope_PbftMembership:
+		output = 16
+	case *pb.BznEnvelope_StatusRequest:
+		output = 17
+	case *pb.BznEnvelope_StatusResponse:
+		output = 18
+	default:
+		err = ErrInvalidPayloadCase
 	}
-
-	if output < 10 || output > 18 {
-		return "", ErrInvalidPayloadCase
-	}
-	return strconv.Itoa(output), nil
+	return output, err
 }
