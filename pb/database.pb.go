@@ -20,6 +20,31 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+type DatabaseSubscriptionUpdateOperationType int32
+
+const (
+	DatabaseSubscriptionUpdate_UPDATE DatabaseSubscriptionUpdateOperationType = 0
+	DatabaseSubscriptionUpdate_DELETE DatabaseSubscriptionUpdateOperationType = 1
+)
+
+var DatabaseSubscriptionUpdateOperationType_name = map[int32]string{
+	0: "UPDATE",
+	1: "DELETE",
+}
+
+var DatabaseSubscriptionUpdateOperationType_value = map[string]int32{
+	"UPDATE": 0,
+	"DELETE": 1,
+}
+
+func (x DatabaseSubscriptionUpdateOperationType) String() string {
+	return proto.EnumName(DatabaseSubscriptionUpdateOperationType_name, int32(x))
+}
+
+func (DatabaseSubscriptionUpdateOperationType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_b90fe3356ea5df07, []int{11, 0}
+}
+
 type DatabaseMsg struct {
 	Header *DatabaseHeader `protobuf:"bytes,1,opt,name=header,proto3" json:"header,omitempty"`
 	// Types that are valid to be assigned to Msg:
@@ -32,6 +57,14 @@ type DatabaseMsg struct {
 	//	*DatabaseMsg_Size
 	//	*DatabaseMsg_Subscribe
 	//	*DatabaseMsg_Unsubscribe
+	//	*DatabaseMsg_Nullmsg
+	//	*DatabaseMsg_CreateDb
+	//	*DatabaseMsg_DeleteDb
+	//	*DatabaseMsg_HasDb
+	//	*DatabaseMsg_Writers
+	//	*DatabaseMsg_AddWriters
+	//	*DatabaseMsg_RemoveWriters
+	//	*DatabaseMsg_QuickRead
 	Msg                  isDatabaseMsg_Msg `protobuf_oneof:"msg"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
@@ -110,6 +143,38 @@ type DatabaseMsg_Unsubscribe struct {
 	Unsubscribe *DatabaseUnsubscribe `protobuf:"bytes,10,opt,name=unsubscribe,proto3,oneof"`
 }
 
+type DatabaseMsg_Nullmsg struct {
+	Nullmsg *DatabaseNullmsg `protobuf:"bytes,11,opt,name=nullmsg,proto3,oneof"`
+}
+
+type DatabaseMsg_CreateDb struct {
+	CreateDb *DatabaseRequest `protobuf:"bytes,12,opt,name=create_db,json=createDb,proto3,oneof"`
+}
+
+type DatabaseMsg_DeleteDb struct {
+	DeleteDb *DatabaseRequest `protobuf:"bytes,13,opt,name=delete_db,json=deleteDb,proto3,oneof"`
+}
+
+type DatabaseMsg_HasDb struct {
+	HasDb *DatabaseHasDb `protobuf:"bytes,14,opt,name=has_db,json=hasDb,proto3,oneof"`
+}
+
+type DatabaseMsg_Writers struct {
+	Writers *DatabaseRequest `protobuf:"bytes,16,opt,name=writers,proto3,oneof"`
+}
+
+type DatabaseMsg_AddWriters struct {
+	AddWriters *DatabaseWriters `protobuf:"bytes,17,opt,name=add_writers,json=addWriters,proto3,oneof"`
+}
+
+type DatabaseMsg_RemoveWriters struct {
+	RemoveWriters *DatabaseWriters `protobuf:"bytes,18,opt,name=remove_writers,json=removeWriters,proto3,oneof"`
+}
+
+type DatabaseMsg_QuickRead struct {
+	QuickRead *DatabaseRead `protobuf:"bytes,19,opt,name=quick_read,json=quickRead,proto3,oneof"`
+}
+
 func (*DatabaseMsg_Create) isDatabaseMsg_Msg() {}
 
 func (*DatabaseMsg_Read) isDatabaseMsg_Msg() {}
@@ -127,6 +192,22 @@ func (*DatabaseMsg_Size) isDatabaseMsg_Msg() {}
 func (*DatabaseMsg_Subscribe) isDatabaseMsg_Msg() {}
 
 func (*DatabaseMsg_Unsubscribe) isDatabaseMsg_Msg() {}
+
+func (*DatabaseMsg_Nullmsg) isDatabaseMsg_Msg() {}
+
+func (*DatabaseMsg_CreateDb) isDatabaseMsg_Msg() {}
+
+func (*DatabaseMsg_DeleteDb) isDatabaseMsg_Msg() {}
+
+func (*DatabaseMsg_HasDb) isDatabaseMsg_Msg() {}
+
+func (*DatabaseMsg_Writers) isDatabaseMsg_Msg() {}
+
+func (*DatabaseMsg_AddWriters) isDatabaseMsg_Msg() {}
+
+func (*DatabaseMsg_RemoveWriters) isDatabaseMsg_Msg() {}
+
+func (*DatabaseMsg_QuickRead) isDatabaseMsg_Msg() {}
 
 func (m *DatabaseMsg) GetMsg() isDatabaseMsg_Msg {
 	if m != nil {
@@ -198,6 +279,62 @@ func (m *DatabaseMsg) GetUnsubscribe() *DatabaseUnsubscribe {
 	return nil
 }
 
+func (m *DatabaseMsg) GetNullmsg() *DatabaseNullmsg {
+	if x, ok := m.GetMsg().(*DatabaseMsg_Nullmsg); ok {
+		return x.Nullmsg
+	}
+	return nil
+}
+
+func (m *DatabaseMsg) GetCreateDb() *DatabaseRequest {
+	if x, ok := m.GetMsg().(*DatabaseMsg_CreateDb); ok {
+		return x.CreateDb
+	}
+	return nil
+}
+
+func (m *DatabaseMsg) GetDeleteDb() *DatabaseRequest {
+	if x, ok := m.GetMsg().(*DatabaseMsg_DeleteDb); ok {
+		return x.DeleteDb
+	}
+	return nil
+}
+
+func (m *DatabaseMsg) GetHasDb() *DatabaseHasDb {
+	if x, ok := m.GetMsg().(*DatabaseMsg_HasDb); ok {
+		return x.HasDb
+	}
+	return nil
+}
+
+func (m *DatabaseMsg) GetWriters() *DatabaseRequest {
+	if x, ok := m.GetMsg().(*DatabaseMsg_Writers); ok {
+		return x.Writers
+	}
+	return nil
+}
+
+func (m *DatabaseMsg) GetAddWriters() *DatabaseWriters {
+	if x, ok := m.GetMsg().(*DatabaseMsg_AddWriters); ok {
+		return x.AddWriters
+	}
+	return nil
+}
+
+func (m *DatabaseMsg) GetRemoveWriters() *DatabaseWriters {
+	if x, ok := m.GetMsg().(*DatabaseMsg_RemoveWriters); ok {
+		return x.RemoveWriters
+	}
+	return nil
+}
+
+func (m *DatabaseMsg) GetQuickRead() *DatabaseRead {
+	if x, ok := m.GetMsg().(*DatabaseMsg_QuickRead); ok {
+		return x.QuickRead
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*DatabaseMsg) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
 	return _DatabaseMsg_OneofMarshaler, _DatabaseMsg_OneofUnmarshaler, _DatabaseMsg_OneofSizer, []interface{}{
@@ -210,6 +347,14 @@ func (*DatabaseMsg) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) e
 		(*DatabaseMsg_Size)(nil),
 		(*DatabaseMsg_Subscribe)(nil),
 		(*DatabaseMsg_Unsubscribe)(nil),
+		(*DatabaseMsg_Nullmsg)(nil),
+		(*DatabaseMsg_CreateDb)(nil),
+		(*DatabaseMsg_DeleteDb)(nil),
+		(*DatabaseMsg_HasDb)(nil),
+		(*DatabaseMsg_Writers)(nil),
+		(*DatabaseMsg_AddWriters)(nil),
+		(*DatabaseMsg_RemoveWriters)(nil),
+		(*DatabaseMsg_QuickRead)(nil),
 	}
 }
 
@@ -260,6 +405,46 @@ func _DatabaseMsg_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	case *DatabaseMsg_Unsubscribe:
 		b.EncodeVarint(10<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.Unsubscribe); err != nil {
+			return err
+		}
+	case *DatabaseMsg_Nullmsg:
+		b.EncodeVarint(11<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Nullmsg); err != nil {
+			return err
+		}
+	case *DatabaseMsg_CreateDb:
+		b.EncodeVarint(12<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.CreateDb); err != nil {
+			return err
+		}
+	case *DatabaseMsg_DeleteDb:
+		b.EncodeVarint(13<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.DeleteDb); err != nil {
+			return err
+		}
+	case *DatabaseMsg_HasDb:
+		b.EncodeVarint(14<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.HasDb); err != nil {
+			return err
+		}
+	case *DatabaseMsg_Writers:
+		b.EncodeVarint(16<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Writers); err != nil {
+			return err
+		}
+	case *DatabaseMsg_AddWriters:
+		b.EncodeVarint(17<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.AddWriters); err != nil {
+			return err
+		}
+	case *DatabaseMsg_RemoveWriters:
+		b.EncodeVarint(18<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.RemoveWriters); err != nil {
+			return err
+		}
+	case *DatabaseMsg_QuickRead:
+		b.EncodeVarint(19<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.QuickRead); err != nil {
 			return err
 		}
 	case nil:
@@ -344,6 +529,70 @@ func _DatabaseMsg_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Bu
 		err := b.DecodeMessage(msg)
 		m.Msg = &DatabaseMsg_Unsubscribe{msg}
 		return true, err
+	case 11: // msg.nullmsg
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(DatabaseNullmsg)
+		err := b.DecodeMessage(msg)
+		m.Msg = &DatabaseMsg_Nullmsg{msg}
+		return true, err
+	case 12: // msg.create_db
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(DatabaseRequest)
+		err := b.DecodeMessage(msg)
+		m.Msg = &DatabaseMsg_CreateDb{msg}
+		return true, err
+	case 13: // msg.delete_db
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(DatabaseRequest)
+		err := b.DecodeMessage(msg)
+		m.Msg = &DatabaseMsg_DeleteDb{msg}
+		return true, err
+	case 14: // msg.has_db
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(DatabaseHasDb)
+		err := b.DecodeMessage(msg)
+		m.Msg = &DatabaseMsg_HasDb{msg}
+		return true, err
+	case 16: // msg.writers
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(DatabaseRequest)
+		err := b.DecodeMessage(msg)
+		m.Msg = &DatabaseMsg_Writers{msg}
+		return true, err
+	case 17: // msg.add_writers
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(DatabaseWriters)
+		err := b.DecodeMessage(msg)
+		m.Msg = &DatabaseMsg_AddWriters{msg}
+		return true, err
+	case 18: // msg.remove_writers
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(DatabaseWriters)
+		err := b.DecodeMessage(msg)
+		m.Msg = &DatabaseMsg_RemoveWriters{msg}
+		return true, err
+	case 19: // msg.quick_read
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(DatabaseRead)
+		err := b.DecodeMessage(msg)
+		m.Msg = &DatabaseMsg_QuickRead{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -398,6 +647,46 @@ func _DatabaseMsg_OneofSizer(msg proto.Message) (n int) {
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
+	case *DatabaseMsg_Nullmsg:
+		s := proto.Size(x.Nullmsg)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *DatabaseMsg_CreateDb:
+		s := proto.Size(x.CreateDb)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *DatabaseMsg_DeleteDb:
+		s := proto.Size(x.DeleteDb)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *DatabaseMsg_HasDb:
+		s := proto.Size(x.HasDb)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *DatabaseMsg_Writers:
+		s := proto.Size(x.Writers)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *DatabaseMsg_AddWriters:
+		s := proto.Size(x.AddWriters)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *DatabaseMsg_RemoveWriters:
+		s := proto.Size(x.RemoveWriters)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *DatabaseMsg_QuickRead:
+		s := proto.Size(x.QuickRead)
+		n += 2 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
 	case nil:
 	default:
 		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
@@ -407,7 +696,8 @@ func _DatabaseMsg_OneofSizer(msg proto.Message) (n int) {
 
 type DatabaseHeader struct {
 	DbUuid               string   `protobuf:"bytes,1,opt,name=db_uuid,json=dbUuid,proto3" json:"db_uuid,omitempty"`
-	TransactionId        uint64   `protobuf:"varint,2,opt,name=transaction_id,json=transactionId,proto3" json:"transaction_id,omitempty"`
+	Nonce                uint64   `protobuf:"varint,2,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	PointOfContact       []byte   `protobuf:"bytes,3,opt,name=point_of_contact,json=pointOfContact,proto3" json:"point_of_contact,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -445,11 +735,18 @@ func (m *DatabaseHeader) GetDbUuid() string {
 	return ""
 }
 
-func (m *DatabaseHeader) GetTransactionId() uint64 {
+func (m *DatabaseHeader) GetNonce() uint64 {
 	if m != nil {
-		return m.TransactionId
+		return m.Nonce
 	}
 	return 0
+}
+
+func (m *DatabaseHeader) GetPointOfContact() []byte {
+	if m != nil {
+		return m.PointOfContact
+	}
+	return nil
 }
 
 type DatabaseCreate struct {
@@ -665,7 +962,7 @@ func (m *DatabaseSubscribe) GetKey() string {
 
 type DatabaseUnsubscribe struct {
 	Key                  string   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	TransactionId        uint64   `protobuf:"varint,2,opt,name=transaction_id,json=transactionId,proto3" json:"transaction_id,omitempty"`
+	Nonce                uint64   `protobuf:"varint,2,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -703,9 +1000,9 @@ func (m *DatabaseUnsubscribe) GetKey() string {
 	return ""
 }
 
-func (m *DatabaseUnsubscribe) GetTransactionId() uint64 {
+func (m *DatabaseUnsubscribe) GetNonce() uint64 {
 	if m != nil {
-		return m.TransactionId
+		return m.Nonce
 	}
 	return 0
 }
@@ -749,19 +1046,90 @@ func (m *DatabaseHas) GetKey() string {
 	return ""
 }
 
-type DatabaseSubscriptionUpdate struct {
-	Key                  string   `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
-	Value                []byte   `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+type DatabaseHasDb struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DatabaseHasDb) Reset()         { *m = DatabaseHasDb{} }
+func (m *DatabaseHasDb) String() string { return proto.CompactTextString(m) }
+func (*DatabaseHasDb) ProtoMessage()    {}
+func (*DatabaseHasDb) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b90fe3356ea5df07, []int{9}
+}
+
+func (m *DatabaseHasDb) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DatabaseHasDb.Unmarshal(m, b)
+}
+func (m *DatabaseHasDb) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DatabaseHasDb.Marshal(b, m, deterministic)
+}
+func (m *DatabaseHasDb) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DatabaseHasDb.Merge(m, src)
+}
+func (m *DatabaseHasDb) XXX_Size() int {
+	return xxx_messageInfo_DatabaseHasDb.Size(m)
+}
+func (m *DatabaseHasDb) XXX_DiscardUnknown() {
+	xxx_messageInfo_DatabaseHasDb.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DatabaseHasDb proto.InternalMessageInfo
+
+type DatabaseWriters struct {
+	Writers              []string `protobuf:"bytes,1,rep,name=writers,proto3" json:"writers,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DatabaseWriters) Reset()         { *m = DatabaseWriters{} }
+func (m *DatabaseWriters) String() string { return proto.CompactTextString(m) }
+func (*DatabaseWriters) ProtoMessage()    {}
+func (*DatabaseWriters) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b90fe3356ea5df07, []int{10}
+}
+
+func (m *DatabaseWriters) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DatabaseWriters.Unmarshal(m, b)
+}
+func (m *DatabaseWriters) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DatabaseWriters.Marshal(b, m, deterministic)
+}
+func (m *DatabaseWriters) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DatabaseWriters.Merge(m, src)
+}
+func (m *DatabaseWriters) XXX_Size() int {
+	return xxx_messageInfo_DatabaseWriters.Size(m)
+}
+func (m *DatabaseWriters) XXX_DiscardUnknown() {
+	xxx_messageInfo_DatabaseWriters.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DatabaseWriters proto.InternalMessageInfo
+
+func (m *DatabaseWriters) GetWriters() []string {
+	if m != nil {
+		return m.Writers
+	}
+	return nil
+}
+
+type DatabaseSubscriptionUpdate struct {
+	Key                  string                                  `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value                []byte                                  `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	Operation            DatabaseSubscriptionUpdateOperationType `protobuf:"varint,3,opt,name=operation,proto3,enum=pb.DatabaseSubscriptionUpdateOperationType" json:"operation,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                                `json:"-"`
+	XXX_unrecognized     []byte                                  `json:"-"`
+	XXX_sizecache        int32                                   `json:"-"`
 }
 
 func (m *DatabaseSubscriptionUpdate) Reset()         { *m = DatabaseSubscriptionUpdate{} }
 func (m *DatabaseSubscriptionUpdate) String() string { return proto.CompactTextString(m) }
 func (*DatabaseSubscriptionUpdate) ProtoMessage()    {}
 func (*DatabaseSubscriptionUpdate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b90fe3356ea5df07, []int{9}
+	return fileDescriptor_b90fe3356ea5df07, []int{11}
 }
 
 func (m *DatabaseSubscriptionUpdate) XXX_Unmarshal(b []byte) error {
@@ -796,6 +1164,13 @@ func (m *DatabaseSubscriptionUpdate) GetValue() []byte {
 	return nil
 }
 
+func (m *DatabaseSubscriptionUpdate) GetOperation() DatabaseSubscriptionUpdateOperationType {
+	if m != nil {
+		return m.Operation
+	}
+	return DatabaseSubscriptionUpdate_UPDATE
+}
+
 type DatabaseRedirectResponse struct {
 	LeaderId             string   `protobuf:"bytes,1,opt,name=leader_id,json=leaderId,proto3" json:"leader_id,omitempty"`
 	LeaderName           string   `protobuf:"bytes,2,opt,name=leader_name,json=leaderName,proto3" json:"leader_name,omitempty"`
@@ -811,7 +1186,7 @@ func (m *DatabaseRedirectResponse) Reset()         { *m = DatabaseRedirectRespon
 func (m *DatabaseRedirectResponse) String() string { return proto.CompactTextString(m) }
 func (*DatabaseRedirectResponse) ProtoMessage()    {}
 func (*DatabaseRedirectResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b90fe3356ea5df07, []int{10}
+	return fileDescriptor_b90fe3356ea5df07, []int{12}
 }
 
 func (m *DatabaseRedirectResponse) XXX_Unmarshal(b []byte) error {
@@ -879,7 +1254,7 @@ func (m *DatabaseHasResponse) Reset()         { *m = DatabaseHasResponse{} }
 func (m *DatabaseHasResponse) String() string { return proto.CompactTextString(m) }
 func (*DatabaseHasResponse) ProtoMessage()    {}
 func (*DatabaseHasResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b90fe3356ea5df07, []int{11}
+	return fileDescriptor_b90fe3356ea5df07, []int{13}
 }
 
 func (m *DatabaseHasResponse) XXX_Unmarshal(b []byte) error {
@@ -914,6 +1289,53 @@ func (m *DatabaseHasResponse) GetHas() bool {
 	return false
 }
 
+type DatabaseHasDbResponse struct {
+	Uuid                 string   `protobuf:"bytes,1,opt,name=uuid,proto3" json:"uuid,omitempty"`
+	Has                  bool     `protobuf:"varint,2,opt,name=has,proto3" json:"has,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DatabaseHasDbResponse) Reset()         { *m = DatabaseHasDbResponse{} }
+func (m *DatabaseHasDbResponse) String() string { return proto.CompactTextString(m) }
+func (*DatabaseHasDbResponse) ProtoMessage()    {}
+func (*DatabaseHasDbResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b90fe3356ea5df07, []int{14}
+}
+
+func (m *DatabaseHasDbResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DatabaseHasDbResponse.Unmarshal(m, b)
+}
+func (m *DatabaseHasDbResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DatabaseHasDbResponse.Marshal(b, m, deterministic)
+}
+func (m *DatabaseHasDbResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DatabaseHasDbResponse.Merge(m, src)
+}
+func (m *DatabaseHasDbResponse) XXX_Size() int {
+	return xxx_messageInfo_DatabaseHasDbResponse.Size(m)
+}
+func (m *DatabaseHasDbResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DatabaseHasDbResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DatabaseHasDbResponse proto.InternalMessageInfo
+
+func (m *DatabaseHasDbResponse) GetUuid() string {
+	if m != nil {
+		return m.Uuid
+	}
+	return ""
+}
+
+func (m *DatabaseHasDbResponse) GetHas() bool {
+	if m != nil {
+		return m.Has
+	}
+	return false
+}
+
 type DatabaseKeysResponse struct {
 	Keys                 []string `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -925,7 +1347,7 @@ func (m *DatabaseKeysResponse) Reset()         { *m = DatabaseKeysResponse{} }
 func (m *DatabaseKeysResponse) String() string { return proto.CompactTextString(m) }
 func (*DatabaseKeysResponse) ProtoMessage()    {}
 func (*DatabaseKeysResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b90fe3356ea5df07, []int{12}
+	return fileDescriptor_b90fe3356ea5df07, []int{15}
 }
 
 func (m *DatabaseKeysResponse) XXX_Unmarshal(b []byte) error {
@@ -965,7 +1387,7 @@ func (m *DatabaseReadResponse) Reset()         { *m = DatabaseReadResponse{} }
 func (m *DatabaseReadResponse) String() string { return proto.CompactTextString(m) }
 func (*DatabaseReadResponse) ProtoMessage()    {}
 func (*DatabaseReadResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b90fe3356ea5df07, []int{13}
+	return fileDescriptor_b90fe3356ea5df07, []int{16}
 }
 
 func (m *DatabaseReadResponse) XXX_Unmarshal(b []byte) error {
@@ -1012,7 +1434,7 @@ func (m *DatabaseSizeResponse) Reset()         { *m = DatabaseSizeResponse{} }
 func (m *DatabaseSizeResponse) String() string { return proto.CompactTextString(m) }
 func (*DatabaseSizeResponse) ProtoMessage()    {}
 func (*DatabaseSizeResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b90fe3356ea5df07, []int{14}
+	return fileDescriptor_b90fe3356ea5df07, []int{17}
 }
 
 func (m *DatabaseSizeResponse) XXX_Unmarshal(b []byte) error {
@@ -1057,7 +1479,7 @@ func (m *DatabaseRequest) Reset()         { *m = DatabaseRequest{} }
 func (m *DatabaseRequest) String() string { return proto.CompactTextString(m) }
 func (*DatabaseRequest) ProtoMessage()    {}
 func (*DatabaseRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b90fe3356ea5df07, []int{15}
+	return fileDescriptor_b90fe3356ea5df07, []int{18}
 }
 
 func (m *DatabaseRequest) XXX_Unmarshal(b []byte) error {
@@ -1078,6 +1500,53 @@ func (m *DatabaseRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_DatabaseRequest proto.InternalMessageInfo
 
+type DatabaseWritersResponse struct {
+	Owner                string   `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
+	Writers              []string `protobuf:"bytes,2,rep,name=writers,proto3" json:"writers,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DatabaseWritersResponse) Reset()         { *m = DatabaseWritersResponse{} }
+func (m *DatabaseWritersResponse) String() string { return proto.CompactTextString(m) }
+func (*DatabaseWritersResponse) ProtoMessage()    {}
+func (*DatabaseWritersResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b90fe3356ea5df07, []int{19}
+}
+
+func (m *DatabaseWritersResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DatabaseWritersResponse.Unmarshal(m, b)
+}
+func (m *DatabaseWritersResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DatabaseWritersResponse.Marshal(b, m, deterministic)
+}
+func (m *DatabaseWritersResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DatabaseWritersResponse.Merge(m, src)
+}
+func (m *DatabaseWritersResponse) XXX_Size() int {
+	return xxx_messageInfo_DatabaseWritersResponse.Size(m)
+}
+func (m *DatabaseWritersResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DatabaseWritersResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DatabaseWritersResponse proto.InternalMessageInfo
+
+func (m *DatabaseWritersResponse) GetOwner() string {
+	if m != nil {
+		return m.Owner
+	}
+	return ""
+}
+
+func (m *DatabaseWritersResponse) GetWriters() []string {
+	if m != nil {
+		return m.Writers
+	}
+	return nil
+}
+
 type DatabaseError struct {
 	Message              string   `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -1089,7 +1558,7 @@ func (m *DatabaseError) Reset()         { *m = DatabaseError{} }
 func (m *DatabaseError) String() string { return proto.CompactTextString(m) }
 func (*DatabaseError) ProtoMessage()    {}
 func (*DatabaseError) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b90fe3356ea5df07, []int{16}
+	return fileDescriptor_b90fe3356ea5df07, []int{20}
 }
 
 func (m *DatabaseError) XXX_Unmarshal(b []byte) error {
@@ -1127,6 +1596,8 @@ type DatabaseResponse struct {
 	//	*DatabaseResponse_Keys
 	//	*DatabaseResponse_Size
 	//	*DatabaseResponse_Error
+	//	*DatabaseResponse_HasDb
+	//	*DatabaseResponse_Writers
 	Response             isDatabaseResponse_Response `protobuf_oneof:"response"`
 	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
 	XXX_unrecognized     []byte                      `json:"-"`
@@ -1137,7 +1608,7 @@ func (m *DatabaseResponse) Reset()         { *m = DatabaseResponse{} }
 func (m *DatabaseResponse) String() string { return proto.CompactTextString(m) }
 func (*DatabaseResponse) ProtoMessage()    {}
 func (*DatabaseResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b90fe3356ea5df07, []int{17}
+	return fileDescriptor_b90fe3356ea5df07, []int{21}
 }
 
 func (m *DatabaseResponse) XXX_Unmarshal(b []byte) error {
@@ -1197,6 +1668,14 @@ type DatabaseResponse_Error struct {
 	Error *DatabaseError `protobuf:"bytes,8,opt,name=error,proto3,oneof"`
 }
 
+type DatabaseResponse_HasDb struct {
+	HasDb *DatabaseHasDbResponse `protobuf:"bytes,9,opt,name=has_db,json=hasDb,proto3,oneof"`
+}
+
+type DatabaseResponse_Writers struct {
+	Writers *DatabaseWritersResponse `protobuf:"bytes,10,opt,name=writers,proto3,oneof"`
+}
+
 func (*DatabaseResponse_Redirect) isDatabaseResponse_Response() {}
 
 func (*DatabaseResponse_SubscriptionUpdate) isDatabaseResponse_Response() {}
@@ -1210,6 +1689,10 @@ func (*DatabaseResponse_Keys) isDatabaseResponse_Response() {}
 func (*DatabaseResponse_Size) isDatabaseResponse_Response() {}
 
 func (*DatabaseResponse_Error) isDatabaseResponse_Response() {}
+
+func (*DatabaseResponse_HasDb) isDatabaseResponse_Response() {}
+
+func (*DatabaseResponse_Writers) isDatabaseResponse_Response() {}
 
 func (m *DatabaseResponse) GetResponse() isDatabaseResponse_Response {
 	if m != nil {
@@ -1267,6 +1750,20 @@ func (m *DatabaseResponse) GetError() *DatabaseError {
 	return nil
 }
 
+func (m *DatabaseResponse) GetHasDb() *DatabaseHasDbResponse {
+	if x, ok := m.GetResponse().(*DatabaseResponse_HasDb); ok {
+		return x.HasDb
+	}
+	return nil
+}
+
+func (m *DatabaseResponse) GetWriters() *DatabaseWritersResponse {
+	if x, ok := m.GetResponse().(*DatabaseResponse_Writers); ok {
+		return x.Writers
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*DatabaseResponse) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
 	return _DatabaseResponse_OneofMarshaler, _DatabaseResponse_OneofUnmarshaler, _DatabaseResponse_OneofSizer, []interface{}{
@@ -1277,6 +1774,8 @@ func (*DatabaseResponse) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buff
 		(*DatabaseResponse_Keys)(nil),
 		(*DatabaseResponse_Size)(nil),
 		(*DatabaseResponse_Error)(nil),
+		(*DatabaseResponse_HasDb)(nil),
+		(*DatabaseResponse_Writers)(nil),
 	}
 }
 
@@ -1317,6 +1816,16 @@ func _DatabaseResponse_OneofMarshaler(msg proto.Message, b *proto.Buffer) error 
 	case *DatabaseResponse_Error:
 		b.EncodeVarint(8<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.Error); err != nil {
+			return err
+		}
+	case *DatabaseResponse_HasDb:
+		b.EncodeVarint(9<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.HasDb); err != nil {
+			return err
+		}
+	case *DatabaseResponse_Writers:
+		b.EncodeVarint(10<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Writers); err != nil {
 			return err
 		}
 	case nil:
@@ -1385,6 +1894,22 @@ func _DatabaseResponse_OneofUnmarshaler(msg proto.Message, tag, wire int, b *pro
 		err := b.DecodeMessage(msg)
 		m.Response = &DatabaseResponse_Error{msg}
 		return true, err
+	case 9: // response.has_db
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(DatabaseHasDbResponse)
+		err := b.DecodeMessage(msg)
+		m.Response = &DatabaseResponse_HasDb{msg}
+		return true, err
+	case 10: // response.writers
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(DatabaseWritersResponse)
+		err := b.DecodeMessage(msg)
+		m.Response = &DatabaseResponse_Writers{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -1429,6 +1954,16 @@ func _DatabaseResponse_OneofSizer(msg proto.Message) (n int) {
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
+	case *DatabaseResponse_HasDb:
+		s := proto.Size(x.HasDb)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *DatabaseResponse_Writers:
+		s := proto.Size(x.Writers)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
 	case nil:
 	default:
 		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
@@ -1436,7 +1971,39 @@ func _DatabaseResponse_OneofSizer(msg proto.Message) (n int) {
 	return n
 }
 
+type DatabaseNullmsg struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DatabaseNullmsg) Reset()         { *m = DatabaseNullmsg{} }
+func (m *DatabaseNullmsg) String() string { return proto.CompactTextString(m) }
+func (*DatabaseNullmsg) ProtoMessage()    {}
+func (*DatabaseNullmsg) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b90fe3356ea5df07, []int{22}
+}
+
+func (m *DatabaseNullmsg) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DatabaseNullmsg.Unmarshal(m, b)
+}
+func (m *DatabaseNullmsg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DatabaseNullmsg.Marshal(b, m, deterministic)
+}
+func (m *DatabaseNullmsg) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DatabaseNullmsg.Merge(m, src)
+}
+func (m *DatabaseNullmsg) XXX_Size() int {
+	return xxx_messageInfo_DatabaseNullmsg.Size(m)
+}
+func (m *DatabaseNullmsg) XXX_DiscardUnknown() {
+	xxx_messageInfo_DatabaseNullmsg.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DatabaseNullmsg proto.InternalMessageInfo
+
 func init() {
+	proto.RegisterEnum("pb.DatabaseSubscriptionUpdateOperationType", DatabaseSubscriptionUpdateOperationType_name, DatabaseSubscriptionUpdateOperationType_value)
 	proto.RegisterType((*DatabaseMsg)(nil), "pb.database_msg")
 	proto.RegisterType((*DatabaseHeader)(nil), "pb.database_header")
 	proto.RegisterType((*DatabaseCreate)(nil), "pb.database_create")
@@ -1446,64 +2013,88 @@ func init() {
 	proto.RegisterType((*DatabaseSubscribe)(nil), "pb.database_subscribe")
 	proto.RegisterType((*DatabaseUnsubscribe)(nil), "pb.database_unsubscribe")
 	proto.RegisterType((*DatabaseHas)(nil), "pb.database_has")
+	proto.RegisterType((*DatabaseHasDb)(nil), "pb.database_has_db")
+	proto.RegisterType((*DatabaseWriters)(nil), "pb.database_writers")
 	proto.RegisterType((*DatabaseSubscriptionUpdate)(nil), "pb.database_subscription_update")
 	proto.RegisterType((*DatabaseRedirectResponse)(nil), "pb.database_redirect_response")
 	proto.RegisterType((*DatabaseHasResponse)(nil), "pb.database_has_response")
+	proto.RegisterType((*DatabaseHasDbResponse)(nil), "pb.database_has_db_response")
 	proto.RegisterType((*DatabaseKeysResponse)(nil), "pb.database_keys_response")
 	proto.RegisterType((*DatabaseReadResponse)(nil), "pb.database_read_response")
 	proto.RegisterType((*DatabaseSizeResponse)(nil), "pb.database_size_response")
 	proto.RegisterType((*DatabaseRequest)(nil), "pb.database_request")
+	proto.RegisterType((*DatabaseWritersResponse)(nil), "pb.database_writers_response")
 	proto.RegisterType((*DatabaseError)(nil), "pb.database_error")
 	proto.RegisterType((*DatabaseResponse)(nil), "pb.database_response")
+	proto.RegisterType((*DatabaseNullmsg)(nil), "pb.database_nullmsg")
 }
 
 func init() { proto.RegisterFile("database.proto", fileDescriptor_b90fe3356ea5df07) }
 
 var fileDescriptor_b90fe3356ea5df07 = []byte{
-	// 709 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x95, 0x5b, 0x6f, 0xd3, 0x30,
-	0x14, 0xc7, 0xd3, 0xa5, 0xe9, 0xe5, 0xec, 0x42, 0xe7, 0x95, 0x11, 0x06, 0x82, 0x12, 0x6e, 0xd3,
-	0x80, 0x69, 0x02, 0x09, 0x09, 0xb1, 0x07, 0xb4, 0x07, 0x94, 0xbd, 0x70, 0x31, 0xda, 0x73, 0xe5,
-	0xd4, 0xd6, 0x16, 0x6d, 0x6d, 0x82, 0xed, 0x20, 0x95, 0x0f, 0xc8, 0x33, 0x1f, 0x84, 0x0f, 0x81,
-	0x7c, 0x69, 0xea, 0xa4, 0xd1, 0xb4, 0xbd, 0x25, 0x3e, 0xbf, 0xf3, 0xcf, 0xc9, 0xb9, 0x19, 0xb6,
-	0x28, 0x91, 0x24, 0x21, 0x82, 0x1d, 0xe6, 0x3c, 0x93, 0x19, 0x5a, 0xcb, 0x93, 0xe8, 0x9f, 0x0f,
-	0x1b, 0x8b, 0xe3, 0xf1, 0x54, 0x9c, 0xa3, 0x57, 0xd0, 0xb9, 0x60, 0x84, 0x32, 0x1e, 0xb6, 0x46,
-	0xad, 0xfd, 0xf5, 0xb7, 0x3b, 0x87, 0x79, 0x72, 0x58, 0x12, 0xc6, 0x84, 0x2d, 0x82, 0xde, 0x40,
-	0x67, 0xc2, 0x19, 0x91, 0x2c, 0x5c, 0x6b, 0x80, 0x8d, 0x29, 0xf6, 0xb0, 0x85, 0xd0, 0x4b, 0x68,
-	0x73, 0x46, 0x68, 0xe8, 0x6b, 0x78, 0xbb, 0x02, 0x2b, 0x43, 0xec, 0x61, 0x0d, 0x28, 0xdd, 0x22,
-	0xa7, 0x4a, 0xb7, 0xdd, 0xa0, 0x6b, 0x4c, 0x4a, 0xd7, 0x3c, 0x29, 0x9c, 0xb2, 0x2b, 0x26, 0x59,
-	0x18, 0x34, 0xe0, 0xc6, 0xa4, 0x70, 0xf3, 0x84, 0x9e, 0x81, 0x7f, 0x41, 0x44, 0xd8, 0xd1, 0xec,
-	0xa0, 0xfa, 0x7f, 0x44, 0xc4, 0x1e, 0x56, 0x66, 0x74, 0x00, 0xed, 0x4b, 0x36, 0x17, 0x61, 0x57,
-	0x63, 0xc3, 0x5a, 0xb0, 0x3f, 0x0b, 0x26, 0xa4, 0x8a, 0x57, 0x31, 0x8a, 0x15, 0xe9, 0x6f, 0x16,
-	0xf6, 0xae, 0x67, 0x15, 0x83, 0xde, 0x43, 0x5f, 0x14, 0x89, 0x98, 0xf0, 0x34, 0x61, 0x61, 0x5f,
-	0x3b, 0xec, 0x56, 0x1c, 0x4a, 0x6b, 0xec, 0xe1, 0x25, 0x8a, 0x8e, 0x61, 0xbd, 0x98, 0x2d, 0x3d,
-	0x41, 0x7b, 0x86, 0xd5, 0xc4, 0xcc, 0x5c, 0x5f, 0x17, 0x3f, 0x09, 0xc0, 0x9f, 0x8a, 0xf3, 0xe8,
-	0x3b, 0xdc, 0xa9, 0xd5, 0x12, 0xdd, 0x83, 0x2e, 0x4d, 0xc6, 0x45, 0x91, 0x52, 0x5d, 0xf1, 0x3e,
-	0xee, 0xd0, 0xe4, 0xac, 0x48, 0x29, 0x7a, 0x0e, 0x5b, 0x92, 0x93, 0x99, 0x20, 0x13, 0x99, 0x66,
-	0xb3, 0x71, 0x4a, 0x75, 0x91, 0xdb, 0x78, 0xd3, 0x39, 0x3d, 0xa5, 0xd1, 0x07, 0x47, 0xd2, 0xd6,
-	0x79, 0x00, 0xfe, 0x25, 0x9b, 0x5b, 0x39, 0xf5, 0x88, 0x86, 0x10, 0xfc, 0x22, 0x57, 0x85, 0xe9,
-	0x93, 0x0d, 0x6c, 0x5e, 0xa2, 0x27, 0xb0, 0x59, 0xa9, 0xff, 0xaa, 0x63, 0x45, 0xdd, 0x56, 0xfb,
-	0xa6, 0xea, 0x4f, 0x1d, 0x57, 0x5b, 0xf9, 0x55, 0xfd, 0x17, 0x80, 0x56, 0x13, 0xdf, 0xc0, 0x7d,
-	0x85, 0x61, 0x53, 0x9a, 0x1b, 0x82, 0xb9, 0x61, 0xda, 0x46, 0xce, 0xdc, 0xa9, 0x76, 0x5b, 0xfd,
-	0xe4, 0x67, 0x78, 0x58, 0x0f, 0x2d, 0xd7, 0x92, 0xb7, 0xcc, 0xc3, 0x9f, 0x16, 0xec, 0x39, 0x69,
-	0xa6, 0x29, 0x67, 0x13, 0x39, 0xe6, 0x4c, 0xe4, 0xd9, 0x4c, 0x30, 0xf4, 0x00, 0xfa, 0x57, 0xba,
-	0x13, 0xc6, 0x65, 0x07, 0xf4, 0xcc, 0xc1, 0x29, 0x45, 0x8f, 0x61, 0xdd, 0x1a, 0x67, 0x64, 0x6a,
-	0x74, 0xfb, 0x18, 0xcc, 0xd1, 0x17, 0x32, 0x65, 0x0e, 0x70, 0x91, 0x09, 0xa9, 0x27, 0xbb, 0x04,
-	0xe2, 0x4c, 0x48, 0x07, 0xc8, 0x33, 0x2e, 0xf5, 0x3c, 0x6f, 0x2e, 0x80, 0x6f, 0x19, 0x97, 0x68,
-	0x1f, 0x06, 0x0b, 0x05, 0x29, 0x73, 0x43, 0x05, 0x9a, 0xda, 0xb2, 0x32, 0x52, 0xe6, 0x8a, 0x8c,
-	0x3e, 0xc2, 0x5d, 0x37, 0x65, 0xcb, 0x5f, 0x58, 0xcd, 0xc4, 0xc0, 0x8c, 0xb8, 0x8a, 0xb7, 0xa7,
-	0xc7, 0x39, 0x7a, 0x0d, 0xbb, 0xa5, 0xb3, 0x9a, 0xd9, 0xa5, 0x37, 0xb2, 0x83, 0xde, 0x1a, 0xf9,
-	0xfb, 0x7d, 0x33, 0xd0, 0xd1, 0x27, 0x87, 0x56, 0x9d, 0x79, 0xdd, 0xb7, 0x9a, 0xb3, 0x7e, 0xe2,
-	0x28, 0xa8, 0xb9, 0x5f, 0x2a, 0x0c, 0x21, 0x48, 0xe6, 0x92, 0x09, 0xad, 0x11, 0x60, 0xf3, 0x52,
-	0x46, 0xb1, 0xa6, 0x0f, 0x4d, 0x14, 0x08, 0x06, 0xf5, 0x35, 0x12, 0x1d, 0x2c, 0xd7, 0xf8, 0x98,
-	0x71, 0x9e, 0x71, 0x14, 0x42, 0x77, 0xca, 0x84, 0x20, 0xe7, 0xcc, 0x46, 0xb5, 0x78, 0x8d, 0xfe,
-	0xfa, 0xb0, 0xed, 0x08, 0xd8, 0xef, 0xdf, 0x6a, 0xc3, 0x1f, 0x43, 0x6f, 0xd1, 0x32, 0x76, 0xc7,
-	0x3f, 0xaa, 0x6d, 0xb7, 0x5a, 0x3f, 0xc5, 0x1e, 0x2e, 0x3d, 0xd0, 0x0f, 0xd8, 0x69, 0xe8, 0x5c,
-	0xbb, 0xff, 0x47, 0x4d, 0x5b, 0xcf, 0xe5, 0x62, 0x0f, 0x23, 0xf7, 0xf8, 0xcc, 0xf4, 0xfd, 0x91,
-	0xbd, 0x45, 0xcc, 0xd5, 0xb0, 0xb7, 0x72, 0x8b, 0xb8, 0xa1, 0x2c, 0xae, 0x13, 0xdd, 0x0d, 0xe6,
-	0x72, 0xb8, 0x5f, 0x5f, 0xf8, 0x2e, 0xaf, 0x37, 0xff, 0x91, 0x2d, 0x45, 0xa7, 0xe1, 0x03, 0x95,
-	0xd6, 0x29, 0xf7, 0xff, 0x91, 0xdd, 0xff, 0xdd, 0x06, 0x8f, 0x4a, 0xf1, 0xcb, 0x5b, 0xe0, 0x00,
-	0x02, 0x5d, 0x3d, 0x7b, 0x65, 0xa0, 0x8a, 0x8b, 0xb6, 0xc4, 0x1e, 0x36, 0xc8, 0x09, 0xa8, 0x1a,
-	0x18, 0xff, 0xa4, 0xa3, 0xaf, 0xee, 0x77, 0xff, 0x03, 0x00, 0x00, 0xff, 0xff, 0xbd, 0x0b, 0x68,
-	0x86, 0xcc, 0x07, 0x00, 0x00,
+	// 1014 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x56, 0xed, 0x6e, 0xe3, 0x44,
+	0x14, 0x75, 0x3e, 0x9c, 0xc4, 0x37, 0x6d, 0x48, 0xa7, 0x65, 0xf1, 0x2e, 0x0b, 0x14, 0x83, 0xa0,
+	0x2a, 0xa5, 0x44, 0x5d, 0x01, 0x5a, 0xb1, 0xa0, 0xa5, 0xa4, 0x92, 0x11, 0x5f, 0xab, 0x61, 0x2b,
+	0x7e, 0x5a, 0xe3, 0x78, 0xb6, 0xb1, 0x9a, 0xd8, 0x5e, 0xcf, 0x78, 0x57, 0xe1, 0x39, 0x78, 0x1f,
+	0x24, 0x7e, 0xf0, 0x5c, 0x68, 0x3e, 0xec, 0x8c, 0x13, 0x13, 0xe8, 0xbf, 0xf1, 0xdc, 0x73, 0xee,
+	0xcc, 0x78, 0xce, 0x9d, 0x7b, 0x60, 0x14, 0x11, 0x4e, 0x42, 0xc2, 0xe8, 0x79, 0x96, 0xa7, 0x3c,
+	0x45, 0xed, 0x2c, 0xf4, 0xfe, 0xe8, 0xc3, 0x5e, 0x39, 0x1d, 0x2c, 0xd9, 0x0d, 0xfa, 0x04, 0x7a,
+	0x73, 0x4a, 0x22, 0x9a, 0xbb, 0xad, 0xe3, 0xd6, 0xc9, 0xf0, 0xe2, 0xf0, 0x3c, 0x0b, 0xcf, 0x2b,
+	0x84, 0x0a, 0x61, 0x0d, 0x41, 0x9f, 0x42, 0x6f, 0x96, 0x53, 0xc2, 0xa9, 0xdb, 0x6e, 0x00, 0xab,
+	0x90, 0x6f, 0x61, 0x0d, 0x42, 0x1f, 0x43, 0x37, 0xa7, 0x24, 0x72, 0x3b, 0x12, 0x7c, 0x50, 0x03,
+	0x8b, 0x80, 0x6f, 0x61, 0x09, 0x10, 0x79, 0x8b, 0x2c, 0x12, 0x79, 0xbb, 0x0d, 0x79, 0x55, 0x48,
+	0xe4, 0x55, 0x23, 0x01, 0x8f, 0xe8, 0x82, 0x72, 0xea, 0xda, 0x0d, 0x70, 0x15, 0x12, 0x70, 0x35,
+	0x42, 0x1f, 0x42, 0x67, 0x4e, 0x98, 0xdb, 0x93, 0xd8, 0x71, 0xfd, 0x7c, 0x84, 0xf9, 0x16, 0x16,
+	0x61, 0x74, 0x0a, 0xdd, 0x5b, 0xba, 0x62, 0x6e, 0x5f, 0xc2, 0x8e, 0x36, 0x36, 0xfb, 0xb2, 0xa0,
+	0x8c, 0x8b, 0xfd, 0x0a, 0x8c, 0xc0, 0xb2, 0xf8, 0x77, 0xea, 0x0e, 0x76, 0x63, 0x05, 0x06, 0x7d,
+	0x01, 0x0e, 0x2b, 0x42, 0x36, 0xcb, 0xe3, 0x90, 0xba, 0x8e, 0x24, 0xdc, 0xab, 0x11, 0xaa, 0xa8,
+	0x6f, 0xe1, 0x35, 0x14, 0x3d, 0x81, 0x61, 0x91, 0xac, 0x99, 0x20, 0x99, 0x6e, 0xfd, 0xc7, 0x24,
+	0x26, 0xd7, 0x84, 0xa3, 0x09, 0xf4, 0x93, 0x62, 0xb1, 0x58, 0xb2, 0x1b, 0x77, 0xd8, 0xb0, 0x49,
+	0x1d, 0xf3, 0x2d, 0x5c, 0xc2, 0xd0, 0x23, 0x70, 0xd4, 0xb5, 0x05, 0x51, 0xe8, 0xee, 0xed, 0x3c,
+	0xd8, 0x40, 0x01, 0xa7, 0xa1, 0x20, 0xa9, 0x9f, 0x2c, 0x48, 0xfb, 0xbb, 0x49, 0x0a, 0x38, 0x0d,
+	0xd1, 0x19, 0xf4, 0xe6, 0x84, 0x09, 0xc6, 0xa8, 0x49, 0x72, 0x32, 0xe4, 0x5b, 0xd8, 0x9e, 0x13,
+	0x36, 0x0d, 0xc5, 0x49, 0x5e, 0xe7, 0x31, 0xa7, 0x39, 0x73, 0xc7, 0x3b, 0x17, 0x28, 0x61, 0xe8,
+	0x4b, 0x18, 0x92, 0x28, 0x0a, 0x4a, 0xd6, 0x41, 0x03, 0x4b, 0xc7, 0x7c, 0x0b, 0x03, 0x89, 0xa2,
+	0xdf, 0x34, 0xf1, 0x6b, 0x18, 0xe5, 0x74, 0x99, 0xbe, 0xaa, 0xe2, 0x2e, 0xda, 0xc9, 0xdd, 0x57,
+	0xe8, 0x92, 0x7e, 0x01, 0xf0, 0xb2, 0x88, 0x67, 0xb7, 0x52, 0xdb, 0xee, 0xe1, 0xbf, 0x8b, 0xde,
+	0x91, 0x30, 0x4c, 0x49, 0x74, 0x69, 0x43, 0x67, 0xc9, 0x6e, 0xbc, 0x04, 0xde, 0xd8, 0xa8, 0x39,
+	0xf4, 0x16, 0xf4, 0xa3, 0x30, 0x28, 0x8a, 0x38, 0x92, 0x95, 0xe9, 0xe0, 0x5e, 0x14, 0x5e, 0x17,
+	0x71, 0x84, 0x5c, 0xb0, 0x93, 0x34, 0x99, 0xa9, 0x1a, 0xec, 0x5e, 0xb6, 0x27, 0x2d, 0xac, 0x26,
+	0xd0, 0x09, 0x8c, 0xb3, 0x34, 0x4e, 0x78, 0x90, 0xbe, 0x08, 0x66, 0x69, 0xc2, 0xc9, 0x8c, 0xcb,
+	0xda, 0xdb, 0xc3, 0x23, 0x39, 0xff, 0xcb, 0x8b, 0xef, 0xd4, 0xac, 0xf7, 0xd8, 0x58, 0x4f, 0x17,
+	0xeb, 0x18, 0x3a, 0xb7, 0x74, 0xa5, 0xd7, 0x12, 0x43, 0x74, 0x04, 0xf6, 0x2b, 0xb2, 0x28, 0xd4,
+	0x42, 0x7b, 0x58, 0x7d, 0x78, 0xef, 0xc3, 0x7e, 0xed, 0x3c, 0xdb, 0xc4, 0x5a, 0x76, 0x5d, 0xb2,
+	0xff, 0x37, 0xfb, 0x07, 0x06, 0x55, 0x97, 0xef, 0x76, 0xfe, 0x8f, 0x00, 0x6d, 0x57, 0x4f, 0x03,
+	0xee, 0x1b, 0x38, 0x6a, 0xaa, 0x95, 0xe6, 0xcd, 0x18, 0xff, 0x54, 0xff, 0x4f, 0xef, 0xd8, 0x78,
+	0x2b, 0xc5, 0x13, 0xb1, 0xbd, 0xc2, 0x81, 0x79, 0x6f, 0x52, 0xb8, 0xde, 0x19, 0x8c, 0x37, 0xa5,
+	0x82, 0xdc, 0xb5, 0x86, 0x5b, 0xc7, 0x9d, 0x13, 0xa7, 0xd2, 0xaa, 0xf7, 0x67, 0x0b, 0x1e, 0x6e,
+	0x9e, 0x25, 0xe3, 0x71, 0x9a, 0xdc, 0xf1, 0xc7, 0xa1, 0x9f, 0xc0, 0x49, 0x33, 0x9a, 0x13, 0xc1,
+	0x95, 0x97, 0x3e, 0xba, 0xf8, 0xac, 0xe9, 0x99, 0x31, 0x93, 0x9f, 0x57, 0x8c, 0x80, 0xaf, 0x32,
+	0x8a, 0xd7, 0x19, 0xbc, 0x13, 0x18, 0xd5, 0x83, 0x08, 0xa0, 0x77, 0xfd, 0x6c, 0xfa, 0xed, 0xf3,
+	0xab, 0xb1, 0x25, 0xc6, 0xd3, 0xab, 0x1f, 0xaf, 0x9e, 0x5f, 0x8d, 0x5b, 0xde, 0xdf, 0x2d, 0x78,
+	0x60, 0x08, 0x22, 0x8a, 0x73, 0x3a, 0xe3, 0x41, 0x4e, 0x59, 0x96, 0x26, 0x8c, 0xa2, 0xb7, 0xc1,
+	0x59, 0x48, 0x41, 0x07, 0x95, 0x90, 0x07, 0x6a, 0xe2, 0xfb, 0x08, 0xbd, 0x07, 0x43, 0x1d, 0x4c,
+	0xc8, 0x52, 0x1d, 0xc8, 0xc1, 0xa0, 0xa6, 0x7e, 0x26, 0x4b, 0x6a, 0x00, 0xe6, 0x29, 0x53, 0x62,
+	0xae, 0x00, 0x7e, 0xca, 0xb8, 0x01, 0xc8, 0xd2, 0x9c, 0xcb, 0xf6, 0xb1, 0x5f, 0x02, 0x9e, 0xa5,
+	0x39, 0x17, 0x35, 0x51, 0x66, 0xe0, 0x3c, 0x53, 0x28, 0x5b, 0xa2, 0x46, 0x3a, 0x0d, 0xe7, 0x99,
+	0x40, 0x7a, 0x5f, 0xc1, 0x9b, 0xb5, 0xbb, 0xac, 0x8e, 0xb0, 0x7d, 0x05, 0x63, 0xd5, 0x51, 0xc4,
+	0x7e, 0x07, 0xb2, 0x7b, 0x78, 0x4f, 0xc1, 0xdd, 0x10, 0xc2, 0x9a, 0x8f, 0xa0, 0x6b, 0x94, 0xb1,
+	0x1c, 0x37, 0x64, 0x38, 0x83, 0x7b, 0x55, 0x06, 0xd1, 0x64, 0x6a, 0x7c, 0xd9, 0x99, 0x94, 0x74,
+	0xe4, 0xd8, 0x7b, 0x6a, 0xa0, 0x45, 0x15, 0xee, 0xda, 0x6d, 0x73, 0xa5, 0x5d, 0x1a, 0x19, 0x44,
+	0xa3, 0x5a, 0x67, 0x38, 0x02, 0x3b, 0x5c, 0x71, 0xca, 0x64, 0x0e, 0x1b, 0xab, 0x8f, 0x6a, 0x17,
+	0x6d, 0x39, 0xa9, 0x76, 0x81, 0x0c, 0xad, 0xeb, 0x87, 0xd8, 0xfb, 0x01, 0xee, 0x6f, 0xea, 0xbf,
+	0x96, 0x3a, 0x7d, 0x9d, 0x68, 0xb3, 0xe1, 0x60, 0xf5, 0x61, 0x96, 0x47, 0xbb, 0x5e, 0x1e, 0xa7,
+	0x6b, 0x13, 0x13, 0xd0, 0x3c, 0x4f, 0x25, 0x76, 0x49, 0x19, 0x23, 0x37, 0x54, 0xe7, 0x28, 0x3f,
+	0xbd, 0xbf, 0xba, 0x70, 0x60, 0xec, 0x46, 0xaf, 0x78, 0x27, 0x7f, 0xf3, 0x04, 0x06, 0xa5, 0x82,
+	0xb5, 0xc3, 0x79, 0x77, 0xe3, 0xfd, 0xde, 0x90, 0xb7, 0xe8, 0x6b, 0xe5, 0x24, 0xfa, 0x15, 0x0e,
+	0x1b, 0x8a, 0x4c, 0xbb, 0x9f, 0xe3, 0xff, 0x2a, 0x46, 0xdf, 0xc2, 0xc8, 0x9c, 0xbe, 0x56, 0xf5,
+	0x3f, 0xd1, 0x1e, 0x4a, 0x19, 0xa3, 0x07, 0x5b, 0xed, 0xc4, 0xdc, 0x4a, 0x69, 0xa6, 0xa4, 0xb4,
+	0x94, 0x35, 0xba, 0xbf, 0xd5, 0x5b, 0x0d, 0xbc, 0xf4, 0x3d, 0x13, 0x7d, 0xaf, 0xbd, 0x86, 0x05,
+	0x6a, 0x3a, 0xac, 0xdc, 0xcf, 0x44, 0xbb, 0x9f, 0x7e, 0x03, 0xa3, 0xa6, 0xa4, 0xca, 0x03, 0x9d,
+	0x82, 0x2d, 0x6f, 0x4f, 0x1b, 0x26, 0x54, 0xa3, 0xc8, 0x88, 0xe8, 0xf7, 0xea, 0x82, 0x3f, 0xaf,
+	0xdc, 0x81, 0x32, 0x4b, 0x0f, 0x1b, 0xdc, 0x81, 0xb9, 0x82, 0xb6, 0x09, 0x8f, 0xd7, 0x1a, 0x52,
+	0x56, 0xe9, 0x9d, 0xa6, 0xa6, 0x6d, 0x12, 0x4b, 0xfc, 0x25, 0x88, 0x5b, 0x57, 0xd3, 0x35, 0x45,
+	0x6b, 0x67, 0x14, 0xf6, 0xa4, 0x7d, 0x7e, 0xf4, 0x4f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x6d, 0x65,
+	0x2c, 0xac, 0x50, 0x0b, 0x00, 0x00,
 }
