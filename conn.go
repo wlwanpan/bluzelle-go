@@ -40,6 +40,10 @@ func (conn *Conn) Dial() error {
 	}
 
 	conn.webConn = c
+	conn.webConn.SetPongHandler(func(msg string) error {
+		log.Printf("From pong handler: %s", msg)
+		return nil
+	})
 	go func() {
 		for {
 			messageType, r, err := c.ReadMessage()
@@ -52,13 +56,18 @@ func (conn *Conn) Dial() error {
 		}
 	}()
 
+	conn.sendPingMsg()
 	return nil
 }
 
-func (conn *Conn) ReadMsg() <-chan []byte {
+func (conn *Conn) readMsg() <-chan []byte {
 	return conn.IncomingMsg
 }
 
-func (conn *Conn) SendMsg(data []byte) error {
+func (conn *Conn) sendMsg(data []byte) error {
 	return conn.webConn.WriteMessage(websocket.TextMessage, data)
+}
+
+func (conn *Conn) sendPingMsg() error {
+	return conn.webConn.WriteMessage(websocket.PingMessage, []byte{})
 }

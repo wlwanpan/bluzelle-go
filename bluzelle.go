@@ -4,9 +4,7 @@ package main
 // https://github.com/bluzelle/client-development-guide/blob/v0.4.x/layers/layer-4-api-layer.md
 
 import (
-	"io/ioutil"
 	"log"
-	"os"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/wlwanpan/bluzelle-go/pb"
@@ -56,7 +54,10 @@ func (blz *Bluzelle) initLayers() error {
 
 // Adming APIs (https://docs.bluzelle.com/bluzelle-js/api)
 
-func (blz *Bluzelle) Status() {}
+func (blz *Bluzelle) Status() error {
+	statusMsg := blz.newStatusMsg()
+	return blz.sendStatusReq(statusMsg)
+}
 
 func (blz *Bluzelle) Close() {}
 
@@ -65,7 +66,7 @@ func (blz *Bluzelle) CreateDB() error {
 	blzMsg.Msg = &pb.DatabaseMsg_CreateDb{
 		CreateDb: &pb.DatabaseRequest{},
 	}
-	return blz.sendReq(blzMsg)
+	return blz.sendDbReq(blzMsg)
 }
 
 func (blz *Bluzelle) DeleteDB() {}
@@ -103,16 +104,31 @@ func (blz *Bluzelle) Size() {}
 
 // Private
 
-func (blz *Bluzelle) sendReq(dbMsg *pb.DatabaseMsg) error {
+func (blz *Bluzelle) sendStatusReq(statusMsg *pb.StatusRequest) error {
+	data, err := proto.Marshal(statusMsg)
+	if err != nil {
+		return err
+	}
+	blz.sendMsg(data)
+
+	select {
+	case resp := <-blz.readMsg():
+		log.Println(resp)
+	}
+
+	return nil
+}
+
+func (blz *Bluzelle) sendDbReq(dbMsg *pb.DatabaseMsg) error {
 	signedData, err := blz.SignMsg(dbMsg)
 	if err != nil {
 		log.Println("Error signing data: ", err)
 		return err
 	}
-	blz.SendMsg(signedData)
+	blz.sendMsg(signedData)
 
 	select {
-	case resp := <-blz.ReadMsg():
+	case resp := <-blz.readMsg():
 		blzEnvelop := &pb.BznEnvelope{}
 		if err := proto.Unmarshal(resp, blzEnvelop); err != nil {
 			log.Fatal(err)
@@ -129,22 +145,6 @@ func (blz *Bluzelle) sendReq(dbMsg *pb.DatabaseMsg) error {
 	return nil
 }
 
-// ReadPemFile reads a private pem file.
-func ReadPemFile(path string) ([]byte, error) {
-	privKeyFile, err := os.Open(path)
-	if err != nil {
-		return []byte{}, err
-	}
-	defer privKeyFile.Close()
-	pemStats, err := privKeyFile.Stat()
-	if err != nil {
-		return []byte{}, err
-	}
-	log.Println("Loaded pem file", pemStats.Name())
-
-	return ioutil.ReadAll(privKeyFile)
-}
-
 func main() {
 	entry := "bernoulli.bluzelle.com:51010"
 	uuid := "5f493479–2447–47g6–1c36-efa5d251a283"
@@ -159,5 +159,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	blz.CreateDB()
+	if err := blz.CreateDB(); err != nil {
+		log.Println(err)
+	}
 }

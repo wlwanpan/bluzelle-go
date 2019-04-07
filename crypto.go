@@ -12,7 +12,6 @@ import (
 	"log"
 	"strconv"
 	"time"
-	"unicode/utf8"
 
 	"github.com/decred/dcrd/dcrec/secp256k1"
 	"github.com/golang/protobuf/proto"
@@ -20,10 +19,13 @@ import (
 )
 
 var (
+	// ErrPemfileNotECDSA is returned when a wrong pem file format is provided.
 	ErrPemfileNotECDSA = errors.New("crypto: pem file loaded not ecdsa")
 
+	// ErrInvalidPayloadCase is returned when could not find a payload case.
 	ErrInvalidPayloadCase = errors.New("crypto: invalid payload case")
 
+	// ErrSigVerificationFailed is returned when a the priv/pub key generation failed.
 	ErrSigVerificationFailed = errors.New("crypto: fail to verify sig")
 )
 
@@ -64,7 +66,6 @@ func (ct *Crypto) PPubKey() string {
 
 func (ct *Crypto) setMsgSig(blzEnvelope *pb.BznEnvelope) error {
 	timeStamp := blzEnvelope.GetTimestamp()
-	timeStampAsStr := strconv.Itoa(int(timeStamp))
 
 	payloadCase, err := getPayloadCase(blzEnvelope)
 	if err != nil {
@@ -75,7 +76,7 @@ func (ct *Crypto) setMsgSig(blzEnvelope *pb.BznEnvelope) error {
 		ct.PPubKey(),
 		strconv.Itoa(payloadCase),
 		string(blzEnvelope.GetDatabaseMsg()),
-		timeStampAsStr,
+		strconv.Itoa(int(timeStamp)),
 	}
 
 	digest := serializeAndConcat(binForWin)
@@ -118,7 +119,7 @@ func serializeAndConcat(s []string) []byte {
 	var buffer bytes.Buffer
 	for _, data := range s {
 		ds := deterministicSerialize(data)
-		encodedDs := StringToAsciiBytes(ds)
+		encodedDs := stringToASCII(ds)
 		buffer.WriteString(string(encodedDs))
 	}
 
@@ -133,16 +134,6 @@ func deterministicSerialize(data string) string {
 	buffer.WriteString("|")
 	buffer.WriteString(data)
 	return buffer.String()
-}
-
-func StringToAsciiBytes(s string) []byte {
-	t := make([]byte, utf8.RuneCountInString(s))
-	i := 0
-	for _, r := range s {
-		t[i] = byte(r)
-		i++
-	}
-	return t
 }
 
 func getPayloadCase(bzn *pb.BznEnvelope) (int, error) {

@@ -1,9 +1,6 @@
 package main
 
 import (
-	"math/rand"
-	"time"
-
 	"github.com/wlwanpan/bluzelle-go/pb"
 )
 
@@ -17,15 +14,12 @@ type Metadata struct {
 func (md *Metadata) newDatabaseMsg() *pb.DatabaseMsg {
 	return &pb.DatabaseMsg{
 		Header: &pb.DatabaseHeader{
-			DbUuid:         md.blz.UUID,
-			Nonce:          randNonce(),
-			PointOfContact: []byte{},
+			DbUuid: md.blz.UUID,
+			Nonce:  randUint64(),
 		},
 	}
 }
 
-func randNonce() uint64 {
-	now := time.Now().UTC().Unix()
-	r := rand.New(rand.NewSource(now))
-	return r.Uint64()
+func (md *Metadata) newStatusMsg() *pb.StatusRequest {
+	return &pb.StatusRequest{}
 }
