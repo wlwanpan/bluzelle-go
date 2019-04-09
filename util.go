@@ -9,14 +9,25 @@ import (
 	"unicode/utf8"
 )
 
-func stringToASCII(s string) []byte {
-	t := make([]byte, utf8.RuneCountInString(s))
-	i := 0
-	for _, r := range s {
-		t[i] = byte(r)
-		i++
+func stringToASCII(str string) []byte {
+	acsii := make([]byte, utf8.RuneCountInString(str))
+	c := 0
+	for _, r := range str {
+		acsii[c] = byte(runeToASCII(r))
+		c++
 	}
-	return t
+	return acsii
+}
+
+func runeToASCII(r rune) rune {
+	switch {
+	case 97 <= r && r <= 122:
+		return r - 32
+	case 65 <= r && r <= 90:
+		return r + 32
+	default:
+		return r
+	}
 }
 
 func randUint64() uint64 {

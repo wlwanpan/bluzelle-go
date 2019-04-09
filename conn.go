@@ -48,7 +48,9 @@ func (conn *Conn) Dial() error {
 		for {
 			messageType, r, err := c.ReadMessage()
 			if err != nil {
-				log.Println("Error from connection read message:", err)
+				log.Println("Error from conn:", err)
+				log.Println(messageType)
+				log.Println(r)
 			}
 			log.Println(messageType)
 			log.Println(r)

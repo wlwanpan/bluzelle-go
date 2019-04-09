@@ -30,6 +30,7 @@ var (
 )
 
 const (
+	// EcPrivateKey pem format required
 	EcPrivateKey string = "EC PRIVATE KEY"
 )
 
@@ -79,8 +80,13 @@ func (ct *Crypto) setMsgSig(blzEnvelope *pb.BznEnvelope) error {
 		strconv.Itoa(int(timeStamp)),
 	}
 
-	digest := serializeAndConcat(binForWin)
+	digest := []byte(serializeAndConcat(binForWin))
 
+	// Example outgoing payload (binForWin):
+	// 120|MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEHLmWG+xY1lZak68iQMFCh2Vm1EfkEOkbclWWbEO1s+qpf6D6D/Yjo9CR2/zLHWkgTqo71nnjWWEU5FekTHjVmQ==
+	// 2|10
+	// 0|
+	// 1|0
 	sig, err := ct.privKey.Sign(digest)
 	if err != nil {
 		log.Println("From signing digest: ", err)
@@ -115,7 +121,7 @@ func (ct *Crypto) SignMsg(dbMsg *pb.DatabaseMsg) ([]byte, error) {
 	return proto.Marshal(pbBlzEnvelop)
 }
 
-func serializeAndConcat(s []string) []byte {
+func serializeAndConcat(s []string) string {
 	var buffer bytes.Buffer
 	for _, data := range s {
 		ds := deterministicSerialize(data)
@@ -123,9 +129,8 @@ func serializeAndConcat(s []string) []byte {
 		buffer.WriteString(string(encodedDs))
 	}
 
-	result := buffer.Bytes()
-	log.Println("Digest generated: ", result)
-	return result
+	log.Println("Digest generated: ", buffer.String())
+	return buffer.String()
 }
 
 func deterministicSerialize(data string) string {

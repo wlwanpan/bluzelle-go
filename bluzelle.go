@@ -4,10 +4,23 @@ package main
 // https://github.com/bluzelle/client-development-guide/blob/v0.4.x/layers/layer-4-api-layer.md
 
 import (
+	"context"
+	"errors"
 	"log"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/wlwanpan/bluzelle-go/pb"
+)
+
+var (
+	// ErrRequestTimeout is returned when a outgoing request is timed out.
+	ErrRequestTimeout = errors.New("blz: request timed out")
+)
+
+const (
+	// RequestTimeout time limit per db request
+	RequestTimeout = 10 * time.Second
 )
 
 // Bluzelle represents a client connection to the bluzelle network.
@@ -56,7 +69,12 @@ func (blz *Bluzelle) initLayers() error {
 
 func (blz *Bluzelle) Status() error {
 	statusMsg := blz.newStatusMsg()
-	return blz.sendStatusReq(statusMsg)
+	statusResp, err := blz.sendStatusReq(statusMsg)
+	if err != nil {
+		return err
+	}
+	log.Println(statusResp)
+	return nil
 }
 
 func (blz *Bluzelle) Close() {}
@@ -66,7 +84,12 @@ func (blz *Bluzelle) CreateDB() error {
 	blzMsg.Msg = &pb.DatabaseMsg_CreateDb{
 		CreateDb: &pb.DatabaseRequest{},
 	}
-	return blz.sendDbReq(blzMsg)
+	resp, err := blz.sendDbReq(blzMsg)
+	if err != nil {
+		return err
+	}
+	log.Println(resp)
+	return nil
 }
 
 func (blz *Bluzelle) DeleteDB() {}
@@ -100,49 +123,73 @@ func (blz *Bluzelle) Has() {}
 
 func (blz *Bluzelle) Keys() {}
 
-func (blz *Bluzelle) Size() {}
-
-// Private
-
-func (blz *Bluzelle) sendStatusReq(statusMsg *pb.StatusRequest) error {
-	data, err := proto.Marshal(statusMsg)
+func (blz *Bluzelle) Size() error {
+	blzMsg := blz.newDatabaseMsg()
+	blzMsg.Msg = &pb.DatabaseMsg_Size{
+		Size: &pb.DatabaseRequest{},
+	}
+	resp, err := blz.sendDbReq(blzMsg)
 	if err != nil {
 		return err
 	}
-	blz.sendMsg(data)
-
-	select {
-	case resp := <-blz.readMsg():
-		log.Println(resp)
-	}
-
+	log.Println(resp)
 	return nil
 }
 
-func (blz *Bluzelle) sendDbReq(dbMsg *pb.DatabaseMsg) error {
+// Private
+
+func (blz *Bluzelle) sendStatusReq(statusMsg *pb.StatusRequest) (*pb.StatusResponse, error) {
+	data, err := proto.Marshal(statusMsg)
+	if err != nil {
+		return nil, err
+	}
+	blz.sendMsg(data)
+
+	ctx, cancel := context.WithTimeout(context.Background(), RequestTimeout)
+	defer cancel()
+
+	select {
+	case resp := <-blz.readMsg():
+		statusResp := &pb.StatusResponse{}
+		if err := proto.Unmarshal(resp, statusResp); err != nil {
+			return nil, err
+		}
+		return statusResp, nil
+	case <-ctx.Done():
+		return nil, ErrRequestTimeout
+	}
+}
+
+func (blz *Bluzelle) sendDbReq(dbMsg *pb.DatabaseMsg) (*pb.DatabaseResponse, error) {
 	signedData, err := blz.SignMsg(dbMsg)
 	if err != nil {
 		log.Println("Error signing data: ", err)
-		return err
+		return nil, err
 	}
 	blz.sendMsg(signedData)
+
+	ctx, cancel := context.WithTimeout(context.Background(), RequestTimeout)
+	defer cancel()
 
 	select {
 	case resp := <-blz.readMsg():
 		blzEnvelop := &pb.BznEnvelope{}
 		if err := proto.Unmarshal(resp, blzEnvelop); err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
 		dbResp := blzEnvelop.GetDatabaseResponse()
 		pbresp := &pb.DatabaseResponse{}
 		if err = proto.Unmarshal(dbResp, pbresp); err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
+
 		dbErr := pbresp.GetHeader()
 		log.Println("db uuid: ", dbErr.GetDbUuid())
+		return pbresp, nil
+	case <-ctx.Done():
+		return nil, ErrRequestTimeout
 	}
-	return nil
 }
 
 func main() {
@@ -159,7 +206,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := blz.CreateDB(); err != nil {
+	if err := blz.Status(); err != nil {
 		log.Println(err)
 	}
 }
