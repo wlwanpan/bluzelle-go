@@ -1,4 +1,4 @@
-package main
+package bluzelle
 
 import (
 	"github.com/wlwanpan/bluzelle-go/pb"

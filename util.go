@@ -1,4 +1,4 @@
-package main
+package bluzelle
 
 import (
 	"io/ioutil"

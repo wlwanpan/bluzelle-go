@@ -1,15 +1,18 @@
-package main
+package bluzelle
 
 // Layer 2: Cryptographic Layer
 // https://github.com/bluzelle/client-development-guide/blob/v0.4.x/layers/layer-1-persistent-connection.md
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/pem"
 	"errors"
 	"log"
+	"math/big"
 	"strconv"
 	"time"
 
@@ -61,7 +64,7 @@ func (ct *Crypto) GenPubKey() []byte {
 
 func (ct *Crypto) PPubKey() string {
 	pk := ct.GenPubKey()
-	// Todo: confirm why is this header needed ?
+	// TODO: confirm why is this header needed ?
 	return "MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAE" + base64.StdEncoding.EncodeToString(pk)
 }
 
@@ -87,17 +90,22 @@ func (ct *Crypto) setMsgSig(blzEnvelope *pb.BznEnvelope) error {
 	// 2|10
 	// 0|
 	// 1|0
-	sig, err := ct.privKey.Sign(digest)
+	// sig, err := ct.privKey.Sign(digest)
+	ecdsaPriv := (*ecdsa.PrivateKey)(ct.privKey)
+	sig, err := sign(digest, ecdsaPriv)
 	if err != nil {
 		log.Println("From signing digest: ", err)
 		return err
 	}
 
-	if !sig.Verify(digest, ct.privKey.PubKey()) {
+	ecdsaPubKey := (*ecdsa.PublicKey)(ct.privKey.PubKey())
+	// !sig.Verify(digest, ct.privKey.PubKey())
+	if !verify(digest, sig, ecdsaPubKey) {
 		return ErrSigVerificationFailed
 	}
 
-	blzEnvelope.Signature = sig.Serialize()
+	// blzEnvelope.Signature = sig.Serialize()
+	blzEnvelope.Signature = sig
 	return nil
 }
 
@@ -139,6 +147,37 @@ func deterministicSerialize(data string) string {
 	buffer.WriteString("|")
 	buffer.WriteString(data)
 	return buffer.String()
+}
+
+// Testing:
+// Crypto for go developers (GopherCon talk) - George Tankersley
+// speakerdeck.com/gtank/crypto-for-go-developers?slide=71
+func sign(data []byte, priv *ecdsa.PrivateKey) ([]byte, error) {
+	r, s, err := ecdsa.Sign(rand.Reader, priv, data)
+	if err != nil {
+		return nil, err
+	}
+
+	params := priv.Curve.Params()
+	curveByteSize := params.P.BitLen() / 8
+	rBytes := r.Bytes()
+	sBytes := s.Bytes()
+
+	sigSize := curveByteSize * 2
+	sig := make([]byte, sigSize)
+	copy(sig[curveByteSize-len(rBytes):], rBytes)
+	copy(sig[sigSize-len(sBytes):], sBytes)
+	return sig, nil
+}
+
+func verify(data []byte, sig []byte, pubKey *ecdsa.PublicKey) bool {
+	curveByteSize := pubKey.Curve.Params().P.BitLen() / 8
+	r := new(big.Int)
+	s := new(big.Int)
+	r.SetBytes(sig[:curveByteSize])
+	s.SetBytes(sig[curveByteSize:])
+
+	return ecdsa.Verify(pubKey, data[:], r, s)
 }
 
 func getPayloadCase(bzn *pb.BznEnvelope) (int, error) {

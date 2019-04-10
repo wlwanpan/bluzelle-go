@@ -1,4 +1,4 @@
-package main
+package bluzelle
 
 // Layer 1: Persistent Connection
 // https://devel-docs.bluzelle.com/client-development-guide/layers/layer-1-persistent-connection
@@ -30,6 +30,7 @@ func NewConn(endpoint string) *Conn {
 	}
 }
 
+// Dial initiates the websocket connection to blz endpoint.
 func (conn *Conn) Dial() error {
 	u := url.URL{Scheme: "ws", Host: conn.Endpoint}
 	log.Println("Connecting to: ", u.String())
@@ -46,6 +47,7 @@ func (conn *Conn) Dial() error {
 	})
 	go func() {
 		for {
+			// TODO: Manage incoming message to match outgoing request.
 			messageType, r, err := c.ReadMessage()
 			if err != nil {
 				log.Println("Error from conn:", err)
@@ -71,5 +73,5 @@ func (conn *Conn) sendMsg(data []byte) error {
 }
 
 func (conn *Conn) sendPingMsg() error {
-	return conn.webConn.WriteMessage(websocket.PingMessage, []byte{})
+	return conn.webConn.WriteMessage(websocket.PingMessage, nil)
 }

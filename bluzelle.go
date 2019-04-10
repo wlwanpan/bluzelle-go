@@ -1,4 +1,4 @@
-package main
+package bluzelle
 
 // Layer 4: API Layer
 // https://github.com/bluzelle/client-development-guide/blob/v0.4.x/layers/layer-4-api-layer.md
@@ -20,7 +20,7 @@ var (
 
 const (
 	// RequestTimeout time limit per db request
-	RequestTimeout = 10 * time.Second
+	RequestTimeout = 3 * time.Second
 )
 
 // Bluzelle represents a client connection to the bluzelle network.
@@ -47,22 +47,6 @@ func Connect(entry, uuid string, privPem []byte) (*Bluzelle, error) {
 		return nil, err
 	}
 	return blz, nil
-}
-
-func (blz *Bluzelle) initLayers() error {
-	blz.Metadata = &Metadata{blz: blz}
-
-	crypto, err := NewCrypto(blz.privPem)
-	if err != nil {
-		return err
-	}
-	blz.Crypto = crypto
-
-	blz.Conn = NewConn(blz.Entry)
-	if err := blz.Dial(); err != nil {
-		return err
-	}
-	return nil
 }
 
 // Adming APIs (https://docs.bluzelle.com/bluzelle-js/api)
@@ -136,14 +120,32 @@ func (blz *Bluzelle) Size() error {
 	return nil
 }
 
-// Private
+// Private methods
+
+func (blz *Bluzelle) initLayers() error {
+	blz.Metadata = &Metadata{blz: blz}
+
+	crypto, err := NewCrypto(blz.privPem)
+	if err != nil {
+		return err
+	}
+	blz.Crypto = crypto
+
+	blz.Conn = NewConn(blz.Entry)
+	if err := blz.Dial(); err != nil {
+		return err
+	}
+	return nil
+}
 
 func (blz *Bluzelle) sendStatusReq(statusMsg *pb.StatusRequest) (*pb.StatusResponse, error) {
 	data, err := proto.Marshal(statusMsg)
 	if err != nil {
 		return nil, err
 	}
-	blz.sendMsg(data)
+	if err := blz.sendMsg(data); err != nil {
+		return nil, err
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), RequestTimeout)
 	defer cancel()
@@ -166,7 +168,10 @@ func (blz *Bluzelle) sendDbReq(dbMsg *pb.DatabaseMsg) (*pb.DatabaseResponse, err
 		log.Println("Error signing data: ", err)
 		return nil, err
 	}
-	blz.sendMsg(signedData)
+	if err := blz.sendMsg(signedData); err != nil {
+		log.Println("Error sending message: ", err)
+		return nil, err
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), RequestTimeout)
 	defer cancel()
@@ -189,24 +194,5 @@ func (blz *Bluzelle) sendDbReq(dbMsg *pb.DatabaseMsg) (*pb.DatabaseResponse, err
 		return pbresp, nil
 	case <-ctx.Done():
 		return nil, ErrRequestTimeout
-	}
-}
-
-func main() {
-	entry := "bernoulli.bluzelle.com:51010"
-	uuid := "5f493479–2447–47g6–1c36-efa5d251a283"
-
-	pemBytes, err := ReadPemFile("./test.pem")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	blz, err := Connect(entry, uuid, pemBytes)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := blz.Status(); err != nil {
-		log.Println(err)
 	}
 }
