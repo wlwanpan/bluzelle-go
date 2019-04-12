@@ -51,6 +51,8 @@ func Connect(entry, uuid string, privPem []byte) (*Bluzelle, error) {
 
 // Adming APIs (https://docs.bluzelle.com/bluzelle-js/api)
 
+// Status returns the status of the daemon.
+// Response: JSON-encoded swarm status.
 func (blz *Bluzelle) Status() error {
 	statusMsg := blz.newStatusMsg()
 	statusResp, err := blz.sendStatusReq(statusMsg)
@@ -61,8 +63,12 @@ func (blz *Bluzelle) Status() error {
 	return nil
 }
 
-func (blz *Bluzelle) Close() {}
+// Close just closes the connection to the daemon.
+func (blz *Bluzelle) Close() {
+	blz.close <- true
+}
 
+// CreateDB creates a new database at the given uuid.
 func (blz *Bluzelle) CreateDB() error {
 	blzMsg := blz.newDatabaseMsg()
 	blzMsg.Msg = &pb.DatabaseMsg_CreateDb{
@@ -76,20 +82,56 @@ func (blz *Bluzelle) CreateDB() error {
 	return nil
 }
 
-func (blz *Bluzelle) DeleteDB() {}
+// DeleteDB deletes the database at the given uuid.
+func (blz *Bluzelle) DeleteDB() error {
+	blzMsg := blz.newDatabaseMsg()
+	blzMsg.Msg = &pb.DatabaseMsg_DeleteDb{
+		DeleteDb: &pb.DatabaseRequest{},
+	}
+	resp, err := blz.sendDbReq(blzMsg)
+	if err != nil {
+		return err
+	}
+	log.Println(resp)
+	return nil
+}
 
-func (blz *Bluzelle) HasDB() {}
+// HasDB queries to see if a database exists at the given uuid.
+func (blz *Bluzelle) HasDB() error {
+	blzMsg := blz.newDatabaseMsg()
+	blzMsg.Msg = &pb.DatabaseMsg_HasDb{
+		HasDb: &pb.DatabaseHasDb{},
+	}
+	resp, err := blz.sendDbReq(blzMsg)
+	if err != nil {
+		return err
+	}
+	log.Println(resp)
+	return nil
 
-// PublicKey returns the corresponding public key in hex string format.
+}
+
+// PublicKey returns a public key from the private pem given in the constructor.
 func (blz *Bluzelle) PublicKey() string {
 	return blz.PPubKey()
 }
 
+// GetWriters gets the owner and writers of the given database. The owner is the public key
+// of the user that created the database. The writers array lists the public keys of users
+// that are allowed to make changes to the database.
+// Response: JSON {
+//   owner: 'MFYwEAY...EpZop6A==',
+//   writers: [
+//     'MFYwEAYH...0FEoB==', ...
+//   ]
+// }
 func (blz *Bluzelle) GetWriters() {}
 
-func (blz *Bluzelle) AddWriters() {}
+// AddWriters add writers to the writers list. May only be executed by the owner of the database.
+func (blz *Bluzelle) AddWriters(pubKeys ...string) {}
 
-func (blz *Bluzelle) DeleteWriters() {}
+// DeleteWriters deletes writers from the writers list. May only be executed by the owner of the database.
+func (blz *Bluzelle) DeleteWriters(pubKeys ...string) {}
 
 // Database APIs
 

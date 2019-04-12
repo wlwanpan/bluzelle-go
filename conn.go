@@ -18,7 +18,9 @@ type Conn struct {
 	// IncomingMsg
 	IncomingMsg chan []byte
 
-	webConn *websocket.Conn
+	wsConn *websocket.Conn
+
+	close chan bool
 }
 
 // NewConn creates a new conn
@@ -26,7 +28,8 @@ func NewConn(endpoint string) *Conn {
 	return &Conn{
 		Endpoint:    endpoint,
 		IncomingMsg: make(chan []byte),
-		webConn:     nil,
+		wsConn:      nil,
+		close:       make(chan bool),
 	}
 }
 
@@ -40,23 +43,30 @@ func (conn *Conn) Dial() error {
 		return err
 	}
 
-	conn.webConn = c
-	conn.webConn.SetPongHandler(func(msg string) error {
+	conn.wsConn = c
+	conn.wsConn.SetPongHandler(func(msg string) error {
 		log.Printf("From pong handler: %s", msg)
 		return nil
 	})
+
 	go func() {
 		for {
-			// TODO: Manage incoming message to match outgoing request.
-			messageType, r, err := c.ReadMessage()
-			if err != nil {
-				log.Println("Error from conn:", err)
+			select {
+			case <-conn.close:
+				conn.closeConn()
+				return
+			default:
+				// TODO: Manage incoming message to match outgoing request.
+				messageType, r, err := c.ReadMessage()
+				if err != nil {
+					log.Println("Error from conn:", err)
+					log.Println(messageType)
+					log.Println(r)
+				}
 				log.Println(messageType)
 				log.Println(r)
+				conn.IncomingMsg <- r
 			}
-			log.Println(messageType)
-			log.Println(r)
-			conn.IncomingMsg <- r
 		}
 	}()
 
@@ -64,14 +74,33 @@ func (conn *Conn) Dial() error {
 	return nil
 }
 
+// Close sends a socket close message and closes the connection.
+func (conn *Conn) closeConn() {
+	// TODO: To remove error log before release.
+	if conn.wsConn == nil {
+		return
+	}
+	if err := conn.sendCloseMsg(); err != nil {
+		log.Printf("conn: err sending close message: %s", err)
+	}
+	if err := conn.wsConn.Close(); err != nil {
+		log.Printf("conn: err closing connection: %s", err)
+	}
+}
+
 func (conn *Conn) readMsg() <-chan []byte {
 	return conn.IncomingMsg
 }
 
+func (conn *Conn) sendCloseMsg() error {
+	closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
+	return conn.wsConn.WriteMessage(websocket.CloseMessage, closeMsg)
+}
+
 func (conn *Conn) sendMsg(data []byte) error {
-	return conn.webConn.WriteMessage(websocket.TextMessage, data)
+	return conn.wsConn.WriteMessage(websocket.TextMessage, data)
 }
 
 func (conn *Conn) sendPingMsg() error {
-	return conn.webConn.WriteMessage(websocket.PingMessage, nil)
+	return conn.wsConn.WriteMessage(websocket.PingMessage, nil)
 }

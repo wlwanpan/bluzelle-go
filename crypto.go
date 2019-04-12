@@ -149,9 +149,7 @@ func deterministicSerialize(data string) string {
 	return buffer.String()
 }
 
-// Testing:
-// Crypto for go developers (GopherCon talk) - George Tankersley
-// speakerdeck.com/gtank/crypto-for-go-developers?slide=71
+// Testing: https://github.com/gtank/cryptopasta
 func sign(data []byte, priv *ecdsa.PrivateKey) ([]byte, error) {
 	r, s, err := ecdsa.Sign(rand.Reader, priv, data)
 	if err != nil {

@@ -28,4 +28,7 @@ func TestSize(t *testing.T) {
 	if err := blzTest.Size(); err != nil {
 		t.Error(err)
 	}
+
+	// To close on last test or in a seperate test?
+	blzTest.Close()
 }
