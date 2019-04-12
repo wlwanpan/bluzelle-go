@@ -4,10 +4,16 @@ package bluzelle
 // https://devel-docs.bluzelle.com/client-development-guide/layers/layer-1-persistent-connection
 
 import (
+	"errors"
 	"log"
 	"net/url"
 
 	"github.com/gorilla/websocket"
+)
+
+var (
+	// ErrWsConnNotInitialized is returned when writing to a nil websocket.
+	ErrWsConnNotInitialized = errors.New("conn: websocket connection not initialized")
 )
 
 // Conn represents the persistent layer for Bluzelle.
@@ -86,6 +92,7 @@ func (conn *Conn) closeConn() {
 	if err := conn.wsConn.Close(); err != nil {
 		log.Printf("conn: err closing connection: %s", err)
 	}
+	conn.wsConn = nil
 }
 
 func (conn *Conn) readMsg() <-chan []byte {
@@ -98,6 +105,9 @@ func (conn *Conn) sendCloseMsg() error {
 }
 
 func (conn *Conn) sendMsg(data []byte) error {
+	if conn.wsConn == nil {
+		return ErrWsConnNotInitialized
+	}
 	return conn.wsConn.WriteMessage(websocket.TextMessage, data)
 }
 
