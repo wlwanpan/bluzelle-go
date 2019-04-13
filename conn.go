@@ -39,21 +39,24 @@ func NewConn(endpoint string) *Conn {
 	}
 }
 
+// EndpointURL formats the endpoint to a ws protocol.
+func (conn *Conn) EndpointURL() string {
+	url := url.URL{Scheme: "ws", Host: conn.Endpoint}
+	return url.String()
+}
+
 // Dial initiates the websocket connection to blz endpoint.
 func (conn *Conn) Dial() error {
-	u := url.URL{Scheme: "ws", Host: conn.Endpoint}
-	log.Println("Connecting to: ", u.String())
+	url := conn.EndpointURL()
+	log.Println("Connecting to: ", url)
 
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	c, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		return err
 	}
 
 	conn.wsConn = c
-	conn.wsConn.SetPongHandler(func(msg string) error {
-		log.Printf("From pong handler: %s", msg)
-		return nil
-	})
+	conn.setPingPongHandlers()
 
 	go func() {
 		for {
@@ -76,8 +79,20 @@ func (conn *Conn) Dial() error {
 		}
 	}()
 
+	log.Printf("Sending ping to: %s", url)
 	conn.sendPingMsg()
 	return nil
+}
+
+func (conn *Conn) setPingPongHandlers() {
+	conn.wsConn.SetPongHandler(func(msg string) error {
+		log.Printf("Received pong from: %s", conn.EndpointURL())
+		return nil
+	})
+	conn.wsConn.SetPingHandler(func(msg string) error {
+		log.Printf("Received ping, responding with pong to: %s", conn.EndpointURL())
+		return conn.sendPongMsg()
+	})
 }
 
 // Close sends a socket close message and closes the connection.
@@ -99,18 +114,22 @@ func (conn *Conn) readMsg() <-chan []byte {
 	return conn.IncomingMsg
 }
 
-func (conn *Conn) sendCloseMsg() error {
-	closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
-	return conn.wsConn.WriteMessage(websocket.CloseMessage, closeMsg)
-}
-
 func (conn *Conn) sendMsg(data []byte) error {
 	if conn.wsConn == nil {
 		return ErrWsConnNotInitialized
 	}
-	return conn.wsConn.WriteMessage(websocket.TextMessage, data)
+	return conn.wsConn.WriteMessage(websocket.BinaryMessage, data)
 }
 
 func (conn *Conn) sendPingMsg() error {
 	return conn.wsConn.WriteMessage(websocket.PingMessage, nil)
+}
+
+func (conn *Conn) sendPongMsg() error {
+	return conn.wsConn.WriteMessage(websocket.PongMessage, nil)
+}
+
+func (conn *Conn) sendCloseMsg() error {
+	closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
+	return conn.wsConn.WriteMessage(websocket.CloseMessage, closeMsg)
 }

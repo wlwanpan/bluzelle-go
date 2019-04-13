@@ -37,6 +37,7 @@ const (
 	EcPrivateKey string = "EC PRIVATE KEY"
 )
 
+// Crypto represents the cryptographic layer for payload signing and verification.
 type Crypto struct {
 	privKey *secp256k1.PrivateKey
 
@@ -109,14 +110,15 @@ func (ct *Crypto) setMsgSig(blzEnvelope *pb.BznEnvelope) error {
 	return nil
 }
 
+// SignMsg signg a proto msg with the set private key.
 func (ct *Crypto) SignMsg(dbMsg *pb.DatabaseMsg) ([]byte, error) {
 	payload, err := proto.Marshal(dbMsg)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 	pbBlzEnvelop := &pb.BznEnvelope{
 		Sender:    ct.PPubKey(),
-		Signature: []byte{},
+		Signature: nil,
 		Timestamp: uint64(time.Now().UTC().Unix()),
 		Payload: &pb.BznEnvelope_DatabaseMsg{
 			DatabaseMsg: payload,
@@ -124,7 +126,7 @@ func (ct *Crypto) SignMsg(dbMsg *pb.DatabaseMsg) ([]byte, error) {
 	}
 
 	if err := ct.setMsgSig(pbBlzEnvelop); err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 	return proto.Marshal(pbBlzEnvelop)
 }
