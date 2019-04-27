@@ -19,7 +19,7 @@ go get github.com/wlwanpan/bluzelle-go
 
 - Compile protobuf
 ```bash
-protoc -I=proto/proto --go_out=cproto proto/proto/*.proto
+protoc -I=proto/proto --go_out=pb proto/proto/*.proto
 ```
 
 - Import

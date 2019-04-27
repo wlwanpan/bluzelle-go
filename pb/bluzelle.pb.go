@@ -5,8 +5,9 @@ package pb
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -18,7 +19,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type BznEnvelope struct {
 	Sender    string `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
@@ -214,9 +215,9 @@ func (m *BznEnvelope) GetStatusResponse() []byte {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*BznEnvelope) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _BznEnvelope_OneofMarshaler, _BznEnvelope_OneofUnmarshaler, _BznEnvelope_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*BznEnvelope) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*BznEnvelope_DatabaseMsg)(nil),
 		(*BznEnvelope_PbftInternalRequest)(nil),
 		(*BznEnvelope_DatabaseResponse)(nil),
@@ -227,162 +228,6 @@ func (*BznEnvelope) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) e
 		(*BznEnvelope_StatusRequest)(nil),
 		(*BznEnvelope_StatusResponse)(nil),
 	}
-}
-
-func _BznEnvelope_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*BznEnvelope)
-	// payload
-	switch x := m.Payload.(type) {
-	case *BznEnvelope_DatabaseMsg:
-		b.EncodeVarint(10<<3 | proto.WireBytes)
-		b.EncodeRawBytes(x.DatabaseMsg)
-	case *BznEnvelope_PbftInternalRequest:
-		b.EncodeVarint(11<<3 | proto.WireBytes)
-		b.EncodeRawBytes(x.PbftInternalRequest)
-	case *BznEnvelope_DatabaseResponse:
-		b.EncodeVarint(12<<3 | proto.WireBytes)
-		b.EncodeRawBytes(x.DatabaseResponse)
-	case *BznEnvelope_Json:
-		b.EncodeVarint(13<<3 | proto.WireBytes)
-		b.EncodeRawBytes(x.Json)
-	case *BznEnvelope_Audit:
-		b.EncodeVarint(14<<3 | proto.WireBytes)
-		b.EncodeRawBytes(x.Audit)
-	case *BznEnvelope_Pbft:
-		b.EncodeVarint(15<<3 | proto.WireBytes)
-		b.EncodeRawBytes(x.Pbft)
-	case *BznEnvelope_PbftMembership:
-		b.EncodeVarint(16<<3 | proto.WireBytes)
-		b.EncodeRawBytes(x.PbftMembership)
-	case *BznEnvelope_StatusRequest:
-		b.EncodeVarint(17<<3 | proto.WireBytes)
-		b.EncodeRawBytes(x.StatusRequest)
-	case *BznEnvelope_StatusResponse:
-		b.EncodeVarint(18<<3 | proto.WireBytes)
-		b.EncodeRawBytes(x.StatusResponse)
-	case nil:
-	default:
-		return fmt.Errorf("BznEnvelope.Payload has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _BznEnvelope_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*BznEnvelope)
-	switch tag {
-	case 10: // payload.database_msg
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeRawBytes(true)
-		m.Payload = &BznEnvelope_DatabaseMsg{x}
-		return true, err
-	case 11: // payload.pbft_internal_request
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeRawBytes(true)
-		m.Payload = &BznEnvelope_PbftInternalRequest{x}
-		return true, err
-	case 12: // payload.database_response
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeRawBytes(true)
-		m.Payload = &BznEnvelope_DatabaseResponse{x}
-		return true, err
-	case 13: // payload.json
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeRawBytes(true)
-		m.Payload = &BznEnvelope_Json{x}
-		return true, err
-	case 14: // payload.audit
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeRawBytes(true)
-		m.Payload = &BznEnvelope_Audit{x}
-		return true, err
-	case 15: // payload.pbft
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeRawBytes(true)
-		m.Payload = &BznEnvelope_Pbft{x}
-		return true, err
-	case 16: // payload.pbft_membership
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeRawBytes(true)
-		m.Payload = &BznEnvelope_PbftMembership{x}
-		return true, err
-	case 17: // payload.status_request
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeRawBytes(true)
-		m.Payload = &BznEnvelope_StatusRequest{x}
-		return true, err
-	case 18: // payload.status_response
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeRawBytes(true)
-		m.Payload = &BznEnvelope_StatusResponse{x}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _BznEnvelope_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*BznEnvelope)
-	// payload
-	switch x := m.Payload.(type) {
-	case *BznEnvelope_DatabaseMsg:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.DatabaseMsg)))
-		n += len(x.DatabaseMsg)
-	case *BznEnvelope_PbftInternalRequest:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.PbftInternalRequest)))
-		n += len(x.PbftInternalRequest)
-	case *BznEnvelope_DatabaseResponse:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.DatabaseResponse)))
-		n += len(x.DatabaseResponse)
-	case *BznEnvelope_Json:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.Json)))
-		n += len(x.Json)
-	case *BznEnvelope_Audit:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.Audit)))
-		n += len(x.Audit)
-	case *BznEnvelope_Pbft:
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.Pbft)))
-		n += len(x.Pbft)
-	case *BznEnvelope_PbftMembership:
-		n += 2 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.PbftMembership)))
-		n += len(x.PbftMembership)
-	case *BznEnvelope_StatusRequest:
-		n += 2 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.StatusRequest)))
-		n += len(x.StatusRequest)
-	case *BznEnvelope_StatusResponse:
-		n += 2 // tag and wire
-		n += proto.SizeVarint(uint64(len(x.StatusResponse)))
-		n += len(x.StatusResponse)
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 func init() {

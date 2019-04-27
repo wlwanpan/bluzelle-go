@@ -5,8 +5,9 @@ package pb
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -18,7 +19,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type AuditMessage struct {
 	// Types that are valid to be assigned to Msg:
@@ -106,97 +107,13 @@ func (m *AuditMessage) GetFailureDetected() *FailureDetected {
 	return nil
 }
 
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*AuditMessage) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _AuditMessage_OneofMarshaler, _AuditMessage_OneofUnmarshaler, _AuditMessage_OneofSizer, []interface{}{
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*AuditMessage) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
 		(*AuditMessage_PbftCommit)(nil),
 		(*AuditMessage_PrimaryStatus)(nil),
 		(*AuditMessage_FailureDetected)(nil),
 	}
-}
-
-func _AuditMessage_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*AuditMessage)
-	// msg
-	switch x := m.Msg.(type) {
-	case *AuditMessage_PbftCommit:
-		b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.PbftCommit); err != nil {
-			return err
-		}
-	case *AuditMessage_PrimaryStatus:
-		b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.PrimaryStatus); err != nil {
-			return err
-		}
-	case *AuditMessage_FailureDetected:
-		b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.FailureDetected); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("AuditMessage.Msg has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _AuditMessage_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*AuditMessage)
-	switch tag {
-	case 1: // msg.pbft_commit
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(PbftCommitNotification)
-		err := b.DecodeMessage(msg)
-		m.Msg = &AuditMessage_PbftCommit{msg}
-		return true, err
-	case 2: // msg.primary_status
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(PrimaryStatus)
-		err := b.DecodeMessage(msg)
-		m.Msg = &AuditMessage_PrimaryStatus{msg}
-		return true, err
-	case 3: // msg.failure_detected
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(FailureDetected)
-		err := b.DecodeMessage(msg)
-		m.Msg = &AuditMessage_FailureDetected{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _AuditMessage_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*AuditMessage)
-	// msg
-	switch x := m.Msg.(type) {
-	case *AuditMessage_PbftCommit:
-		s := proto.Size(x.PbftCommit)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *AuditMessage_PrimaryStatus:
-		s := proto.Size(x.PrimaryStatus)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *AuditMessage_FailureDetected:
-		s := proto.Size(x.FailureDetected)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
 }
 
 type LeaderStatus struct {
