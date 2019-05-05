@@ -91,22 +91,19 @@ func (ct *Crypto) setMsgSig(blzEnvelope *pb.BznEnvelope) error {
 	// 2|10
 	// 0|
 	// 1|0
-	// sig, err := ct.privKey.Sign(digest)
-	ecdsaPriv := (*ecdsa.PrivateKey)(ct.privKey)
-	sig, err := sign(digest, ecdsaPriv)
+	sig, err := ct.privKey.Sign(digest)
+	// sig, err := sign(digest, (*ecdsa.PrivateKey)(ct.privKey))
 	if err != nil {
-		log.Println("From signing digest: ", err)
 		return err
 	}
 
-	ecdsaPubKey := (*ecdsa.PublicKey)(ct.privKey.PubKey())
-	// !sig.Verify(digest, ct.privKey.PubKey())
-	if !verify(digest, sig, ecdsaPubKey) {
+	if !sig.Verify(digest, ct.privKey.PubKey()) {
+		// if !verify(digest, sig, (*ecdsa.PublicKey)(ct.privKey.PubKey())) {
 		return ErrSigVerificationFailed
 	}
 
-	// blzEnvelope.Signature = sig.Serialize()
-	blzEnvelope.Signature = sig
+	blzEnvelope.Signature = sig.Serialize()
+	// blzEnvelope.Signature = sig
 	return nil
 }
 
@@ -135,8 +132,8 @@ func serializeAndConcat(s []string) string {
 	var buffer bytes.Buffer
 	for _, data := range s {
 		ds := deterministicSerialize(data)
-		encodedDs := stringToASCII(ds)
-		buffer.WriteString(string(encodedDs))
+		encodedData := encodeToUTF8(ds)
+		buffer.WriteString(encodedData)
 	}
 
 	log.Println("Digest generated: ", buffer.String())

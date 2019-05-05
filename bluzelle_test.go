@@ -29,6 +29,9 @@ func TestSize(t *testing.T) {
 		t.Error(err)
 	}
 
-	// To close on last test or in a seperate test?
+}
+
+// Close connection to testnet daemon.
+func TestClose(t *testing.T) {
 	blzTest.Close()
 }

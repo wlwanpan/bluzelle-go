@@ -79,7 +79,7 @@ func (conn *Conn) Dial() error {
 		}
 	}()
 
-	log.Printf("Sending ping to: %s", url)
+	log.Printf("Pinging: %s", url)
 	conn.sendPingMsg()
 	return nil
 }
@@ -90,7 +90,7 @@ func (conn *Conn) setPingPongHandlers() {
 		return nil
 	})
 	conn.wsConn.SetPingHandler(func(msg string) error {
-		log.Printf("Received ping, responding with pong to: %s", conn.EndpointURL())
+		log.Printf("Received ping from: %s, responding pong", conn.EndpointURL())
 		return conn.sendPongMsg()
 	})
 }
@@ -118,7 +118,7 @@ func (conn *Conn) sendMsg(data []byte) error {
 	if conn.wsConn == nil {
 		return ErrWsConnNotInitialized
 	}
-	return conn.wsConn.WriteMessage(websocket.BinaryMessage, data)
+	return conn.wsConn.WriteMessage(websocket.TextMessage, data)
 }
 
 func (conn *Conn) sendPingMsg() error {
